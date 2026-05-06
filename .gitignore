@@ -1,0 +1,12 @@
+﻿# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Output files (we'll commit them later manually)
+output/*.html
