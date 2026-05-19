@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://www.saglikrandevu.com/schema"
+           xmlns="https://www.saglikrandevu.com/schema"
+           xmlns:tns="https://www.saglikrandevu.com/schema"
+           elementFormDefault="qualified">
+
+    <!-- ======================================================= -->
+    <!-- BASİT TİPLER VE KISITLAMALAR (CUSTOM TYPES)             -->
+    <!-- ======================================================= -->
+
+    <!-- Klinik ID Formatı: C harfi ve ardına 2 hane rakam (C01, C02...) -->
+    <xs:simpleType name="clinicIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="C\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Doktor ID Formatı: D harfi ve ardına 2 hane rakam (D01, D02...) -->
+    <xs:simpleType name="doctorIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="D\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Hasta ID Formatı: P harfi ve ardına 2 hane rakam (P01, P02...) -->
+    <xs:simpleType name="patientIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="P\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Randevu ID Formatı: A harfi ve ardına 2 hane rakam (A01, A02...) -->
+    <xs:simpleType name="appointmentIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="A\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- E-posta Doğrulama Deseni (Regex) -->
+    <xs:simpleType name="emailType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Telefon Formatı: +90-XXX-XXX-XXXX formatı -->
+    <xs:simpleType name="phoneType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\+90-\d{3}-\d{3}-\d{4}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Randevu Durum Listesi (Enumeration) -->
+    <xs:simpleType name="statusType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Pending"/>
+            <xs:enumeration value="Completed"/>
+            <xs:enumeration value="Cancelled"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+
+    <!-- ======================================================= -->
+    <!-- KARMAŞIK TİPLER VE YAPI (COMPLEX TYPES)                 -->
+    <!-- ======================================================= -->
+
+    <!-- Doktor Bilgisi -->
+    <xs:complexType name="doctorType">
+        <xs:sequence>
+            <xs:element name="doctorId" type="doctorIdType"/>
+            <xs:element name="firstName" type="xs:string"/>
+            <xs:element name="lastName" type="xs:string"/>
+            <xs:element name="email" type="emailType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Klinik Bilgisi -->
+    <xs:complexType name="clinicType">
+        <xs:sequence>
+            <xs:element name="clinicId" type="clinicIdType"/>
+            <xs:element name="clinicName" type="xs:string"/>
+            <xs:element name="doctors">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="doctor" type="doctorType" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Hasta Bilgisi -->
+    <xs:complexType name="patientType">
+        <xs:sequence>
+            <xs:element name="patientId" type="patientIdType"/>
+            <xs:element name="firstName" type="xs:string"/>
+            <xs:element name="lastName" type="xs:string"/>
+            <xs:element name="phone" type="phoneType"/>
+            <xs:element name="email" type="emailType"/>
+            <xs:element name="dateOfBirth" type="xs:date"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Randevu Bilgisi -->
+    <xs:complexType name="appointmentType">
+        <xs:sequence>
+            <xs:element name="appointmentId" type="appointmentIdType"/>
+            <xs:element name="doctorId" type="doctorIdType"/>
+            <xs:element name="patientId" type="patientIdType"/>
+            <xs:element name="appointmentDateTime" type="xs:dateTime"/>
+            <xs:element name="status" type="statusType"/>
+            <xs:element name="notes" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <!-- ======================================================= -->
+    <!-- ANA ELEMAN TANIMI VE İLİŞKİLER (ROOT ELEMENT)           -->
+    <!-- ======================================================= -->
+
+    <xs:element name="appointmentSystem">
+        <xs:complexType>
+            <xs:sequence>
+                <!-- Klinik listesi zorunludur -->
+                <xs:element name="clinics">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="clinic" type="clinicType" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <!-- Hasta listesi zorunludur -->
+                <xs:element name="patients">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="patient" type="patientType" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <!-- Randevu listesi zorunludur -->
+                <xs:element name="appointments">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="appointment" type="appointmentType" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+
+        <!-- BENZERSİZLİK (UNIQUE) VE ANAHTAR (KEY) KISITLARI -->
+
+        <!-- Her Kliniğin ID'si benzersiz olmalı -->
+        <xs:key name="clinicKey">
+            <xs:selector xpath="tns:clinics/tns:clinic"/>
+            <xs:field xpath="tns:clinicId"/>
+        </xs:key>
+
+        <!-- Her Doktorun ID'si sistem genelinde benzersiz olmalı -->
+        <xs:key name="doctorKey">
+            <xs:selector xpath="tns:clinics/tns:clinic/tns:doctors/tns:doctor"/>
+            <xs:field xpath="tns:doctorId"/>
+        </xs:key>
+
+        <!-- Her Hastanın ID'si sistem genelinde benzersiz olmalı -->
+        <xs:key name="patientKey">
+            <xs:selector xpath="tns:patients/tns:patient"/>
+            <xs:field xpath="tns:patientId"/>
+        </xs:key>
+
+        <!-- Her Randevunun ID'si benzersiz olmalı -->
+        <xs:key name="appointmentKey">
+            <xs:selector xpath="tns:appointments/tns:appointment"/>
+            <xs:field xpath="tns:appointmentId"/>
+        </xs:key>
+
+        <!-- REFERANS KONTROLLERİ (FOREIGN KEY - KEYREF) -->
+
+        <!-- Randevudaki doctorId, sistemdeki bir doktorun ID'si ile eşleşmelidir -->
+        <xs:keyref name="appointmentDoctorRef" refer="doctorKey">
+            <xs:selector xpath="tns:appointments/tns:appointment"/>
+            <xs:field xpath="tns:doctorId"/>
+        </xs:keyref>
+
+        <!-- Randevudaki patientId, sistemdeki bir hastanın ID'si ile eşleşmelidir -->
+        <xs:keyref name="appointmentPatientRef" refer="patientKey">
+            <xs:selector xpath="tns:appointments/tns:appointment"/>
+            <xs:field xpath="tns:patientId"/>
+        </xs:keyref>
+
+    </xs:element>
+
+</xs:schema>
