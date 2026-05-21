@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<appointmentSummary>
+    <totalAppointments>25</totalAppointments>
+    <pending>20</pending>
+    <completed>3</completed>
+    <cancelled>2</cancelled>
+</appointmentSummary>

@@ -1,0 +1,343 @@
+<html xmlns:h="https://www.saglikrandevu.com/schema">
+<head>
+<meta charset="UTF-8">
+<title>Healthcare Appointment Report</title>
+<style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 32px;
+                        color: #222;
+                        background: #f6f8fb;
+                    }
+
+                    h1, h2 {
+                        color: #17415f;
+                    }
+
+                    .summary {
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(120px, 1fr));
+                        gap: 12px;
+                        margin-bottom: 28px;
+                    }
+
+                    .metric {
+                        background: #ffffff;
+                        border: 1px solid #d9e1ea;
+                        border-radius: 6px;
+                        padding: 14px;
+                    }
+
+                    .metric strong {
+                        display: block;
+                        font-size: 24px;
+                        color: #0d5c75;
+                    }
+
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 28px;
+                        background: #ffffff;
+                    }
+
+                    th, td {
+                        border: 1px solid #d9e1ea;
+                        padding: 8px 10px;
+                        text-align: left;
+                    }
+
+                    th {
+                        background: #e9f0f5;
+                    }
+
+                    .Pending {
+                        color: #8a5a00;
+                        font-weight: bold;
+                    }
+
+                    .Completed {
+                        color: #0f6b3d;
+                        font-weight: bold;
+                    }
+
+                    .Cancelled {
+                        color: #9b1c31;
+                        font-weight: bold;
+                    }
+                </style>
+</head>
+<body>
+<h1>Healthcare Appointment Report</h1>
+<div class="summary">
+<div class="metric">
+<span>Total Clinics</span><strong>3</strong>
+</div>
+<div class="metric">
+<span>Total Doctors</span><strong>5</strong>
+</div>
+<div class="metric">
+<span>Total Patients</span><strong>15</strong>
+</div>
+<div class="metric">
+<span>Total Appointments</span><strong>25</strong>
+</div>
+</div>
+<h2>Clinics and Doctors</h2>
+<table>
+<tr>
+<th>Clinic ID</th>
+<th>Clinic Name</th>
+<th>Doctor ID</th>
+<th>Doctor Name</th>
+<th>Email</th>
+</tr>
+<tr>
+<td>C01</td>
+<td>Kardiyoloji</td>
+<td>D01</td>
+<td>Ahmet Yilmaz</td>
+<td>ahmet.yilmaz@hastane.com</td>
+</tr>
+<tr>
+<td>C01</td>
+<td>Kardiyoloji</td>
+<td>D02</td>
+<td>Elif Kaya</td>
+<td>elif.kaya@hastane.com</td>
+</tr>
+<tr>
+<td>C02</td>
+<td>Goz Hastaliklari</td>
+<td>D03</td>
+<td>Can Demir</td>
+<td>can.demir@hastane.com</td>
+</tr>
+<tr>
+<td>C02</td>
+<td>Goz Hastaliklari</td>
+<td>D04</td>
+<td>Zeynep Sahin</td>
+<td>zeynep.sahin@hastane.com</td>
+</tr>
+<tr>
+<td>C03</td>
+<td>Cocuk Sagligi</td>
+<td>D05</td>
+<td>Murat Celik</td>
+<td>murat.celik@hastane.com</td>
+</tr>
+</table>
+<h2>Appointments</h2>
+<table>
+<tr>
+<th>Appointment ID</th>
+<th>Date and Time</th>
+<th>Patient</th>
+<th>Doctor</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+<tr>
+<td>A01</td>
+<td>2026-06-01T09:00:00</td>
+<td>Ayse Ozturk (P01)</td>
+<td>Ahmet Yilmaz (D01)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Rutin kardiyoloji kontrolu.</td>
+</tr>
+<tr>
+<td>A02</td>
+<td>2026-06-01T10:30:00</td>
+<td>Mehmet Yildiz (P02)</td>
+<td>Can Demir (D03)</td>
+<td><span class="Completed">Completed</span></td>
+<td>Goz muayenesi ve gozluk recetesi.</td>
+</tr>
+<tr>
+<td>A03</td>
+<td>2026-06-01T11:00:00</td>
+<td>Elif Sahin (P07)</td>
+<td>Murat Celik (D05)</td>
+<td><span class="Completed">Completed</span></td>
+<td>Cocuk sagligi rutin gelisim takibi.</td>
+</tr>
+<tr>
+<td>A04</td>
+<td>2026-06-01T14:00:00</td>
+<td>Fatma Demir (P03)</td>
+<td>Ahmet Yilmaz (D01)</td>
+<td><span class="Cancelled">Cancelled</span></td>
+<td>Hasta randevuya gelemeyecegini bildirdi.</td>
+</tr>
+<tr>
+<td>A05</td>
+<td>2026-06-02T09:30:00</td>
+<td>Ali Can (P04)</td>
+<td>Elif Kaya (D02)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Efor testi sonucu degerlendirmesi.</td>
+</tr>
+<tr>
+<td>A06</td>
+<td>2026-06-02T11:30:00</td>
+<td>Zeynep Kaya (P05)</td>
+<td>Zeynep Sahin (D04)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Lazer operasyonu sonrasi ilk kontrol.</td>
+</tr>
+<tr>
+<td>A07</td>
+<td>2026-06-02T13:30:00</td>
+<td>Burak Yilmaz (P10)</td>
+<td>Murat Celik (D05)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Asi takvimi takibi.</td>
+</tr>
+<tr>
+<td>A08</td>
+<td>2026-06-03T10:00:00</td>
+<td>Mustafa Ozturk (P06)</td>
+<td>Ahmet Yilmaz (D01)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Tansiyon takibi ve ilac doz ayari.</td>
+</tr>
+<tr>
+<td>A09</td>
+<td>2026-06-03T15:00:00</td>
+<td>Omer Faruk (P08)</td>
+<td>Elif Kaya (D02)</td>
+<td><span class="Completed">Completed</span></td>
+<td>Kardiyak rontgen kontrolu.</td>
+</tr>
+<tr>
+<td>A10</td>
+<td>2026-06-04T09:15:00</td>
+<td>Yasemin Bulut (P09)</td>
+<td>Can Demir (D03)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Katarakt baslangici izlemi.</td>
+</tr>
+<tr>
+<td>A11</td>
+<td>2026-06-04T10:45:00</td>
+<td>Selin Arslan (P11)</td>
+<td>Murat Celik (D05)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Bogaz agrisi ve ates sikayeti.</td>
+</tr>
+<tr>
+<td>A12</td>
+<td>2026-06-04T14:30:00</td>
+<td>Hakan Koc (P12)</td>
+<td>Elif Kaya (D02)</td>
+<td><span class="Cancelled">Cancelled</span></td>
+<td>Doktor acil toplantisi sebebiyle iptal.</td>
+</tr>
+<tr>
+<td>A13</td>
+<td>2026-06-05T09:00:00</td>
+<td>Merve Aydin (P13)</td>
+<td>Murat Celik (D05)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Beslenme duzeni ve diyet planlamasi.</td>
+</tr>
+<tr>
+<td>A14</td>
+<td>2026-06-05T11:00:00</td>
+<td>Gokhan Tekin (P14)</td>
+<td>Zeynep Sahin (D04)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Goz kurulugu tedavisi takibi.</td>
+</tr>
+<tr>
+<td>A15</td>
+<td>2026-06-05T16:00:00</td>
+<td>Busra Ozel (P15)</td>
+<td>Ahmet Yilmaz (D01)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Kalp ritim bozuklugu takibi.</td>
+</tr>
+<tr>
+<td>A16</td>
+<td>2026-06-08T09:30:00</td>
+<td>Ayse Ozturk (P01)</td>
+<td>Ahmet Yilmaz (D01)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Kolesterol olcum sonuclari.</td>
+</tr>
+<tr>
+<td>A17</td>
+<td>2026-06-08T11:15:00</td>
+<td>Mehmet Yildiz (P02)</td>
+<td>Can Demir (D03)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Goz numarasi degisimi kontrolu.</td>
+</tr>
+<tr>
+<td>A18</td>
+<td>2026-06-08T15:30:00</td>
+<td>Fatma Demir (P03)</td>
+<td>Murat Celik (D05)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Mevsimsel alerji kontrolu.</td>
+</tr>
+<tr>
+<td>A19</td>
+<td>2026-06-09T10:00:00</td>
+<td>Ali Can (P04)</td>
+<td>Elif Kaya (D02)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Ritim holter cihazi sonuclari.</td>
+</tr>
+<tr>
+<td>A20</td>
+<td>2026-06-09T14:15:00</td>
+<td>Zeynep Kaya (P05)</td>
+<td>Zeynep Sahin (D04)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Goz tansi̇yonu olcumu.</td>
+</tr>
+<tr>
+<td>A21</td>
+<td>2026-06-10T10:30:00</td>
+<td>Mustafa Ozturk (P06)</td>
+<td>Can Demir (D03)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Goz dibi muayenesi.</td>
+</tr>
+<tr>
+<td>A22</td>
+<td>2026-06-10T11:45:00</td>
+<td>Elif Sahin (P07)</td>
+<td>Murat Celik (D05)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Persentil egrisi takibi.</td>
+</tr>
+<tr>
+<td>A23</td>
+<td>2026-06-11T09:00:00</td>
+<td>Omer Faruk (P08)</td>
+<td>Ahmet Yilmaz (D01)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Genel kardiyak muayene.</td>
+</tr>
+<tr>
+<td>A24</td>
+<td>2026-06-11T13:45:00</td>
+<td>Yasemin Bulut (P09)</td>
+<td>Can Demir (D03)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Retina kontrol muayenesi.</td>
+</tr>
+<tr>
+<td>A25</td>
+<td>2026-06-12T15:00:00</td>
+<td>Burak Yilmaz (P10)</td>
+<td>Elif Kaya (D02)</td>
+<td><span class="Pending">Pending</span></td>
+<td>Ilac dozaji ayarlama.</td>
+</tr>
+</table>
+</body>
+</html>

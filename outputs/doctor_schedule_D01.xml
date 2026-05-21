@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctorSchedule doctorId="D01">
+    <appointment>
+        <appointmentId>A01</appointmentId>
+        <patientId>P01</patientId>
+        <appointmentDateTime>2026-06-01T09:00:00</appointmentDateTime>
+        <status>Pending</status>
+        <notes>Rutin kardiyoloji kontrolu.</notes>
+    </appointment>
+    <appointment>
+        <appointmentId>A04</appointmentId>
+        <patientId>P03</patientId>
+        <appointmentDateTime>2026-06-01T14:00:00</appointmentDateTime>
+        <status>Cancelled</status>
+        <notes>Hasta randevuya gelemeyecegini bildirdi.</notes>
+    </appointment>
+    <appointment>
+        <appointmentId>A08</appointmentId>
+        <patientId>P06</patientId>
+        <appointmentDateTime>2026-06-03T10:00:00</appointmentDateTime>
+        <status>Pending</status>
+        <notes>Tansiyon takibi ve ilac doz ayari.</notes>
+    </appointment>
+    <appointment>
+        <appointmentId>A15</appointmentId>
+        <patientId>P15</patientId>
+        <appointmentDateTime>2026-06-05T16:00:00</appointmentDateTime>
+        <status>Pending</status>
+        <notes>Kalp ritim bozuklugu takibi.</notes>
+    </appointment>
+    <appointment>
+        <appointmentId>A16</appointmentId>
+        <patientId>P01</patientId>
+        <appointmentDateTime>2026-06-08T09:30:00</appointmentDateTime>
+        <status>Pending</status>
+        <notes>Kolesterol olcum sonuclari.</notes>
+    </appointment>
+    <appointment>
+        <appointmentId>A23</appointmentId>
+        <patientId>P08</patientId>
+        <appointmentDateTime>2026-06-11T09:00:00</appointmentDateTime>
+        <status>Pending</status>
+        <notes>Genel kardiyak muayene.</notes>
+    </appointment>
+</doctorSchedule>
