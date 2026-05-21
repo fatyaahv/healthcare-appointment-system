@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<appointmentSystem 
+    xmlns="https://www.saglikrandevu.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://www.saglikrandevu.com/schema healthcare.xsd">
+
+    <!-- 1. KLİNİKLER VE DOKTORLAR -->
+    <clinics>
+        <clinic>
+            <clinicId>C01</clinicId>
+            <clinicName>Kardiyoloji</clinicName>
+            <doctors>
+                <doctor>
+                    <!-- HATA 1: Doktor ID 'D01' yerine 'D-01' girilmiştir. XSD'deki 'D\d{2}' desen kuralına aykırıdır. -->
+                    <doctorId>D-01</doctorId>
+                    <firstName>Ahmet</firstName>
+                    <lastName>Yilmaz</lastName>
+                    <email>ahmet.yilmaz@hastane.com</email>
+                </doctor>
+            </doctors>
+        </clinic>
+    </clinics>
+
+    <!-- 2. HASTALAR -->
+    <patients>
+        <patient>
+            <patientId>P01</patientId>
+            <firstName>Ayse</firstName>
+            <lastName>Ozturk</lastName>
+            <!-- HATA 2: Telefon formatı '+90-XXX-XXX-XXXX' olmalıdır. Buradaki numara aradaki tireleri içermez. -->
+            <phone>+905551234567</phone>
+            <email>ayse.ozturk@email.com</email>
+            <dateOfBirth>1990-05-15</dateOfBirth>
+        </patient>
+    </patients>
+
+    <!-- 3. RANDEVULAR -->
+    <appointments>
+        <appointment>
+            <appointmentId>A01</appointmentId>
+            <doctorId>D01</doctorId>
+            <patientId>P01</patientId>
+            <appointmentDateTime>2026-06-01T09:00:00</appointmentDateTime>
+            <!-- HATA 3: Randevu durumu 'Pending', 'Completed' ya da 'Cancelled' olmalıdır. 'Waiting' geçersizdir (Enum hatası). -->
+            <status>Waiting</status>
+            <notes>Kontrol muayenesi.</notes>
+        </appointment>
+    </appointments>
+
+</appointmentSystem>

@@ -2,9 +2,9 @@
 <appointmentSystem 
     xmlns="https://www.saglikrandevu.com/schema"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="https://www.saglikrandevu.com/schema schema.xsd">
+    xsi:schemaLocation="https://www.saglikrandevu.com/schema healthcare.xsd">
 
-    <!-- 1. KLİNİKLER VE DOKTORLAR -->
+    <!-- 1. KLİNİKLER VE DOKTORLAR (TAM 5 DOKTOR) -->
     <clinics>
         <clinic>
             <clinicId>C01</clinicId>
@@ -13,7 +13,7 @@
                 <doctor>
                     <doctorId>D01</doctorId>
                     <firstName>Ahmet</firstName>
-                    <lastName>Yılmaz</lastName>
+                    <lastName>Yilmaz</lastName>
                     <email>ahmet.yilmaz@hastane.com</email>
                 </doctor>
                 <doctor>
@@ -26,7 +26,7 @@
         </clinic>
         <clinic>
             <clinicId>C02</clinicId>
-            <clinicName>Göz Hastalıkları</clinicName>
+            <clinicName>Goz Hastaliklari</clinicName>
             <doctors>
                 <doctor>
                     <doctorId>D03</doctorId>
@@ -52,29 +52,11 @@
                     <lastName>Celik</lastName>
                     <email>murat.celik@hastane.com</email>
                 </doctor>
-                <doctor>
-                    <doctorId>D06</doctorId>
-                    <firstName>Selin</firstName>
-                    <lastName>Yildiz</lastName>
-                    <email>selin.yildiz@hastane.com</email>
-                </doctor>
-            </doctors>
-        </clinic>
-        <clinic>
-            <clinicId>C04</clinicId>
-            <clinicName>Ortopedi</clinicName>
-            <doctors>
-                <doctor>
-                    <doctorId>D07</doctorId>
-                    <firstName>Hakan</firstName>
-                    <lastName>Arslan</lastName>
-                    <email>hakan.arslan@hastane.com</email>
-                </doctor>
             </doctors>
         </clinic>
     </clinics>
 
-    <!-- 2. HASTALAR -->
+    <!-- 2. HASTALAR (TAM 15 HASTA) -->
     <patients>
         <patient>
             <patientId>P01</patientId>
@@ -156,9 +138,49 @@
             <email>burak.yilmaz@email.com</email>
             <dateOfBirth>2015-08-14</dateOfBirth>
         </patient>
+        <patient>
+            <patientId>P11</patientId>
+            <firstName>Selin</firstName>
+            <lastName>Arslan</lastName>
+            <phone>+90-535-444-1122</phone>
+            <email>selin.arslan@email.com</email>
+            <dateOfBirth>1994-02-28</dateOfBirth>
+        </patient>
+        <patient>
+            <patientId>P12</patientId>
+            <firstName>Hakan</firstName>
+            <lastName>Koc</lastName>
+            <phone>+90-543-555-8811</phone>
+            <email>hakan.koc@email.com</email>
+            <dateOfBirth>1981-06-12</dateOfBirth>
+        </patient>
+        <patient>
+            <patientId>P13</patientId>
+            <firstName>Merve</firstName>
+            <lastName>Aydin</lastName>
+            <phone>+90-506-777-2233</phone>
+            <email>merve.aydin@email.com</email>
+            <dateOfBirth>1989-10-10</dateOfBirth>
+        </patient>
+        <patient>
+            <patientId>P14</patientId>
+            <firstName>Gokhan</firstName>
+            <lastName>Tekin</lastName>
+            <phone>+90-539-888-3344</phone>
+            <email>gokhan.tekin@email.com</email>
+            <dateOfBirth>1975-04-03</dateOfBirth>
+        </patient>
+        <patient>
+            <patientId>P15</patientId>
+            <firstName>Busra</firstName>
+            <lastName>Ozel</lastName>
+            <phone>+90-552-999-4455</phone>
+            <email>busra.ozel@email.com</email>
+            <dateOfBirth>1997-12-25</dateOfBirth>
+        </patient>
     </patients>
 
-    <!-- 3. RANDEVULAR -->
+    <!-- 3. RANDEVULAR (TAM 25 RANDEVU) -->
     <appointments>
         <appointment>
             <appointmentId>A01</appointmentId>
@@ -186,7 +208,7 @@
         </appointment>
         <appointment>
             <appointmentId>A04</appointmentId>
-            <doctorId>D07</doctorId>
+            <doctorId>D01</doctorId>
             <patientId>P03</patientId>
             <appointmentDateTime>2026-06-01T14:00:00</appointmentDateTime>
             <status>Cancelled</status>
@@ -210,7 +232,7 @@
         </appointment>
         <appointment>
             <appointmentId>A07</appointmentId>
-            <doctorId>D06</doctorId>
+            <doctorId>D05</doctorId>
             <patientId>P10</patientId>
             <appointmentDateTime>2026-06-02T13:30:00</appointmentDateTime>
             <status>Pending</status>
@@ -226,11 +248,11 @@
         </appointment>
         <appointment>
             <appointmentId>A09</appointmentId>
-            <doctorId>D07</doctorId>
+            <doctorId>D02</doctorId>
             <patientId>P08</patientId>
             <appointmentDateTime>2026-06-03T15:00:00</appointmentDateTime>
             <status>Completed</status>
-            <notes>Alci alimi sonrasi rontgen kontrolu.</notes>
+            <notes>Kardiyak rontgen kontrolu.</notes>
         </appointment>
         <appointment>
             <appointmentId>A10</appointmentId>
@@ -243,7 +265,7 @@
         <appointment>
             <appointmentId>A11</appointmentId>
             <doctorId>D05</doctorId>
-            <patientId>P07</patientId>
+            <patientId>P11</patientId>
             <appointmentDateTime>2026-06-04T10:45:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Bogaz agrisi ve ates sikayeti.</notes>
@@ -251,15 +273,15 @@
         <appointment>
             <appointmentId>A12</appointmentId>
             <doctorId>D02</doctorId>
-            <patientId>P01</patientId>
+            <patientId>P12</patientId>
             <appointmentDateTime>2026-06-04T14:30:00</appointmentDateTime>
             <status>Cancelled</status>
-            <notes>Doktor acil ameliyata girdigi icin iptal edildi.</notes>
+            <notes>Doktor acil toplantisi sebebiyle iptal.</notes>
         </appointment>
         <appointment>
             <appointmentId>A13</appointmentId>
-            <doctorId>D06</doctorId>
-            <patientId>P10</patientId>
+            <doctorId>D05</doctorId>
+            <patientId>P13</patientId>
             <appointmentDateTime>2026-06-05T09:00:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Beslenme duzeni ve diyet planlamasi.</notes>
@@ -267,23 +289,23 @@
         <appointment>
             <appointmentId>A14</appointmentId>
             <doctorId>D04</doctorId>
-            <patientId>P02</patientId>
+            <patientId>P14</patientId>
             <appointmentDateTime>2026-06-05T11:00:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Goz kurulugu tedavisi takibi.</notes>
         </appointment>
         <appointment>
             <appointmentId>A15</appointmentId>
-            <doctorId>D07</doctorId>
-            <patientId>P03</patientId>
+            <doctorId>D01</doctorId>
+            <patientId>P15</patientId>
             <appointmentDateTime>2026-06-05T16:00:00</appointmentDateTime>
             <status>Pending</status>
-            <notes>Fizik tedavi programi planlama.</notes>
+            <notes>Kalp ritim bozuklugu takibi.</notes>
         </appointment>
         <appointment>
             <appointmentId>A16</appointmentId>
             <doctorId>D01</doctorId>
-            <patientId>P04</patientId>
+            <patientId>P01</patientId>
             <appointmentDateTime>2026-06-08T09:30:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Kolesterol olcum sonuclari.</notes>
@@ -291,7 +313,7 @@
         <appointment>
             <appointmentId>A17</appointmentId>
             <doctorId>D03</doctorId>
-            <patientId>P05</patientId>
+            <patientId>P02</patientId>
             <appointmentDateTime>2026-06-08T11:15:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Goz numarasi degisimi kontrolu.</notes>
@@ -299,7 +321,7 @@
         <appointment>
             <appointmentId>A18</appointmentId>
             <doctorId>D05</doctorId>
-            <patientId>P07</patientId>
+            <patientId>P03</patientId>
             <appointmentDateTime>2026-06-08T15:30:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Mevsimsel alerji kontrolu.</notes>
@@ -307,31 +329,31 @@
         <appointment>
             <appointmentId>A19</appointmentId>
             <doctorId>D02</doctorId>
-            <patientId>P06</patientId>
+            <patientId>P04</patientId>
             <appointmentDateTime>2026-06-09T10:00:00</appointmentDateTime>
             <status>Pending</status>
-            <notes>Ritim holter cihazi baglanmasi.</notes>
+            <notes>Ritim holter cihazi sonuclari.</notes>
         </appointment>
         <appointment>
             <appointmentId>A20</appointmentId>
-            <doctorId>D07</doctorId>
-            <patientId>P08</patientId>
+            <doctorId>D04</doctorId>
+            <patientId>P05</patientId>
             <appointmentDateTime>2026-06-09T14:15:00</appointmentDateTime>
             <status>Pending</status>
-            <notes>Diz agrisi sikayeti.</notes>
+            <notes>Goz tansi̇yonu olcumu.</notes>
         </appointment>
         <appointment>
             <appointmentId>A21</appointmentId>
-            <doctorId>D04</doctorId>
-            <patientId>P09</patientId>
+            <doctorId>D03</doctorId>
+            <patientId>P06</patientId>
             <appointmentDateTime>2026-06-10T10:30:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Goz dibi muayenesi.</notes>
         </appointment>
         <appointment>
             <appointmentId>A22</appointmentId>
-            <doctorId>D06</doctorId>
-            <patientId>P10</patientId>
+            <doctorId>D05</doctorId>
+            <patientId>P07</patientId>
             <appointmentDateTime>2026-06-10T11:45:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Persentil egrisi takibi.</notes>
@@ -339,7 +361,7 @@
         <appointment>
             <appointmentId>A23</appointmentId>
             <doctorId>D01</doctorId>
-            <patientId>P01</patientId>
+            <patientId>P08</patientId>
             <appointmentDateTime>2026-06-11T09:00:00</appointmentDateTime>
             <status>Pending</status>
             <notes>Genel kardiyak muayene.</notes>
@@ -347,18 +369,18 @@
         <appointment>
             <appointmentId>A24</appointmentId>
             <doctorId>D03</doctorId>
-            <patientId>P02</patientId>
+            <patientId>P09</patientId>
             <appointmentDateTime>2026-06-11T13:45:00</appointmentDateTime>
             <status>Pending</status>
-            <notes>Goz tansi̇yonu takibi.</notes>
+            <notes>Retina kontrol muayenesi.</notes>
         </appointment>
         <appointment>
             <appointmentId>A25</appointmentId>
-            <doctorId>D07</doctorId>
-            <patientId>P03</patientId>
+            <doctorId>D02</doctorId>
+            <patientId>P10</patientId>
             <appointmentDateTime>2026-06-12T15:00:00</appointmentDateTime>
             <status>Pending</status>
-            <notes>Bel agrisi ve MR sonuclari.</notes>
+            <notes>Ilac dozaji ayarlama.</notes>
         </appointment>
     </appointments>
 

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://www.saglikrandevu.com/schema"
+           xmlns="https://www.saglikrandevu.com/schema"
+           xmlns:tns="https://www.saglikrandevu.com/schema"
+           elementFormDefault="qualified">
+
+    <!-- ======================================================= -->
+    <!-- BASİT TİPLER VE KISITLAMALAR (CUSTOM TYPES)             -->
+    <!-- ======================================================= -->
+
+    <xs:simpleType name="clinicIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="C\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="doctorIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="D\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="patientIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="P\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="appointmentIdType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="A\d{2}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="emailType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="phoneType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\+90-\d{3}-\d{3}-\d{4}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="statusType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Pending"/>
+            <xs:enumeration value="Completed"/>
+            <xs:enumeration value="Cancelled"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- ======================================================= -->
+    <!-- KARMAŞIK TİPLER VE YAPI (COMPLEX TYPES)                 -->
+    <!-- ======================================================= -->
+
+    <xs:complexType name="doctorType">
+        <xs:sequence>
+            <xs:element name="doctorId" type="doctorIdType"/>
+            <xs:element name="firstName" type="xs:string"/>
+            <xs:element name="lastName" type="xs:string"/>
+            <xs:element name="email" type="emailType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="clinicType">
+        <xs:sequence>
+            <xs:element name="clinicId" type="clinicIdType"/>
+            <xs:element name="clinicName" type="xs:string"/>
+            <xs:element name="doctors">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="doctor" type="doctorType" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="patientType">
+        <xs:sequence>
+            <xs:element name="patientId" type="patientIdType"/>
+            <xs:element name="firstName" type="xs:string"/>
+            <xs:element name="lastName" type="xs:string"/>
+            <xs:element name="phone" type="phoneType"/>
+            <xs:element name="email" type="emailType"/>
+            <xs:element name="dateOfBirth" type="xs:date"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="appointmentType">
+        <xs:sequence>
+            <xs:element name="appointmentId" type="appointmentIdType"/>
+            <xs:element name="doctorId" type="doctorIdType"/>
+            <xs:element name="patientId" type="patientIdType"/>
+            <xs:element name="appointmentDateTime" type="xs:dateTime"/>
+            <xs:element name="status" type="statusType"/>
+            <xs:element name="notes" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- ======================================================= -->
+    <!-- ANA ELEMAN TANIMI VE İLİŞKİLER (ROOT ELEMENT)           -->
+    <!-- ======================================================= -->
+
+    <xs:element name="appointmentSystem">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="clinics">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="clinic" type="clinicType" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <xs:element name="patients">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="patient" type="patientType" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <xs:element name="appointments">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="appointment" type="appointmentType" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+
+        <!-- BENZERSİZLİK (UNIQUE) VE ANAHTAR (KEY) KISITLARI -->
+        <xs:key name="clinicKey">
+            <xs:selector xpath="tns:clinics/tns:clinic"/>
+            <xs:field xpath="tns:clinicId"/>
+        </xs:key>
+
+        <xs:key name="doctorKey">
+            <xs:selector xpath="tns:clinics/tns:clinic/tns:doctors/tns:doctor"/>
+            <xs:field xpath="tns:doctorId"/>
+        </xs:key>
+
+        <xs:key name="patientKey">
+            <xs:selector xpath="tns:patients/tns:patient"/>
+            <xs:field xpath="tns:patientId"/>
+        </xs:key>
+
+        <xs:key name="appointmentKey">
+            <xs:selector xpath="tns:appointments/tns:appointment"/>
+            <xs:field xpath="tns:appointmentId"/>
+        </xs:key>
+
+        <!-- REFERANS KONTROLLERİ (KEYREF) -->
+        <xs:keyref name="appointmentDoctorRef" refer="doctorKey">
+            <xs:selector xpath="tns:appointments/tns:appointment"/>
+            <xs:field xpath="tns:doctorId"/>
+        </xs:keyref>
+
+        <xs:keyref name="appointmentPatientRef" refer="patientKey">
+            <xs:selector xpath="tns:appointments/tns:appointment"/>
+            <xs:field xpath="tns:patientId"/>
+        </xs:keyref>
+
+    </xs:element>
+
+</xs:schema>
