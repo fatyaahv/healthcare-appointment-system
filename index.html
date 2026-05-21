@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Public Health Appointment Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#overview" aria-label="Public Health Appointment Portal">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span>
+        </span>
+        <span>
+          <strong>Public Health Appointment Portal</strong>
+          <small>XML Healthcare Appointment System</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="#services">Services</a>
+        <a href="#appointments">Appointments</a>
+        <a href="#integration">Integration</a>
+        <a href="/docs">Swagger</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="overview">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Republic health services demonstration</p>
+          <h1>Trusted appointment data, served from validated XML.</h1>
+          <p class="lead">A formal public-service portal for clinics, doctors, patients, appointment records, API documentation, and external holiday integration.</p>
+          <div class="hero-actions" aria-label="Project actions">
+            <a class="button primary" href="#appointments">View Appointments</a>
+            <a class="button secondary" href="/docs">Open Swagger</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-band" aria-label="System status">
+      <div class="container status-grid" id="summaryCards">
+        <article class="metric">
+          <span>Appointments</span>
+          <strong data-summary="totalAppointments">--</strong>
+        </article>
+        <article class="metric">
+          <span>Clinics</span>
+          <strong data-summary="totalClinics">--</strong>
+        </article>
+        <article class="metric">
+          <span>Doctors</span>
+          <strong data-summary="totalDoctors">--</strong>
+        </article>
+        <article class="metric">
+          <span>Patients</span>
+          <strong data-summary="totalPatients">--</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="services">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Public service directory</p>
+          <h2>Clinic and doctor registry</h2>
+        </div>
+        <div class="directory" id="clinicDirectory" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section appointments-section" id="appointments">
+      <div class="container appointments-layout">
+        <div>
+          <div class="section-heading compact">
+            <p class="eyebrow">Appointment records</p>
+            <h2>Search official XML data</h2>
+          </div>
+          <div class="filters" aria-label="Appointment filters">
+            <label>
+              Status
+              <select id="statusFilter">
+                <option value="">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </label>
+            <label>
+              Doctor ID
+              <input id="doctorFilter" type="search" placeholder="D01">
+            </label>
+            <button class="button primary" id="applyFilters" type="button">Apply</button>
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Doctor</th>
+                  <th>Patient</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentsTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="notice-panel" aria-label="XML project evidence">
+          <h3>Project Evidence</h3>
+          <a href="appointments.xml">XML Dataset</a>
+          <a href="healthcare.xsd">XSD Schema</a>
+          <a href="report.html">XSLT Report</a>
+          <a href="DEPLOYMENT_PERSON3.md">Deployment Notes</a>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section integration-section" id="integration">
+      <div class="container integration-grid">
+        <div class="section-heading compact">
+          <p class="eyebrow">External integration</p>
+          <h2>Public holiday service</h2>
+          <p class="section-copy">The system checks national holiday data through a REST integration and keeps a local fallback for offline demonstrations.</p>
+        </div>
+        <div class="integration-panel">
+          <div>
+            <span class="panel-label">Integration Source</span>
+            <strong id="holidaySource">Loading</strong>
+          </div>
+          <ul id="holidayList"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>Healthcare Appointment System</span>
+      <span>XML Course Final Project</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +15,12 @@ from external_service import HolidayService
 
 BASE_DIR = Path(__file__).resolve().parent
 XML_FILE = BASE_DIR / "appointments.xml"
+STATIC_FILES = {
+    "/": BASE_DIR / "index.html",
+    "/index.html": BASE_DIR / "index.html",
+    "/styles.css": BASE_DIR / "styles.css",
+    "/app.js": BASE_DIR / "app.js",
+}
 NS_URI = "https://www.saglikrandevu.com/schema"
 NS = {"h": NS_URI}
 ALLOWED_STATUSES = {"Pending", "Completed", "Cancelled"}
@@ -229,7 +236,13 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path in {"/", "/docs"}:
+        if parsed.path in STATIC_FILES:
+            self.send_file(STATIC_FILES[parsed.path])
+            return
+        if parsed.path.startswith("/assets/"):
+            self.send_file(BASE_DIR / parsed.path.lstrip("/"))
+            return
+        if parsed.path == "/docs":
             self.send_html(swagger_ui_html())
             return
         if parsed.path == "/openapi.json":
@@ -252,6 +265,25 @@ class RequestHandler(BaseHTTPRequestHandler):
         body = html.encode("utf-8")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def send_file(self, file_path: Path) -> None:
+        resolved = file_path.resolve()
+        if BASE_DIR not in resolved.parents and resolved != BASE_DIR:
+            self.send_json(HTTPStatus.FORBIDDEN, {"error": "Forbidden"})
+            return
+        if not resolved.exists() or not resolved.is_file():
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "File not found"})
+            return
+
+        body = resolved.read_bytes()
+        content_type = mimetypes.guess_type(resolved.name)[0] or "application/octet-stream"
+        if resolved.suffix == ".js":
+            content_type = "text/javascript"
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
