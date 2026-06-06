@@ -1,7 +1,9 @@
 import unittest
 from http import HTTPStatus
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from api_server import AppointmentApi, AppointmentRepository
+from api_server import AppointmentApi, AppointmentRepository, PortalStore
 from external_service import HolidayService
 
 
@@ -68,6 +70,68 @@ class AppointmentApiTests(unittest.TestCase):
         self.assertEqual(status, HTTPStatus.OK)
         self.assertEqual(payload["source"], "test stub")
         self.assertEqual(payload["holidays"][0]["date"], "2026-01-01")
+
+    def test_patient_booking_flow_and_doctor_visibility(self):
+        with TemporaryDirectory() as temp_dir:
+            api = AppointmentApi(
+                AppointmentRepository(),
+                StubHolidayService(),
+                PortalStore(Path(temp_dir) / "portal_data.json"),
+            )
+
+            status, payload = api.handle_post(
+                "/api/auth/patient/register",
+                {
+                    "tc": "12345678901",
+                    "birthDate": "1990-01-01",
+                    "firstName": "Ali",
+                    "lastName": "Veli",
+                },
+            )
+            self.assertEqual(status, HTTPStatus.CREATED)
+            self.assertEqual(payload["patient"]["tc"], "12345678901")
+
+            status, payload = api.handle_post(
+                "/api/doctor/slots",
+                {
+                    "doctorId": "D01",
+                    "code": "1001",
+                    "date": "2026-06-20",
+                    "startTime": "09:00",
+                    "endTime": "10:00",
+                },
+            )
+            self.assertEqual(status, HTTPStatus.CREATED)
+            self.assertEqual(len(payload["slots"]), 4)
+
+            slot_id = payload["slots"][0]["slotId"]
+            status, payload = api.handle_post(
+                "/api/patient/appointments",
+                {"tc": "12345678901", "birthDate": "1990-01-01", "slotId": slot_id},
+            )
+            self.assertEqual(status, HTTPStatus.CREATED)
+            self.assertTrue(payload["appointment"]["isBooked"])
+
+            status, payload = api.handle_get(
+                "/api/doctor/bookings",
+                {"doctorId": ["D01"], "code": ["1001"]},
+            )
+            self.assertEqual(status, HTTPStatus.OK)
+            self.assertEqual(payload["appointments"][0]["patient"]["firstName"], "Ali")
+            self.assertEqual(payload["appointments"][0]["patient"]["lastName"], "Veli")
+            self.assertEqual(payload["appointments"][0]["patient"]["tc"], "12345678901")
+
+    def test_patient_tc_must_be_11_digits(self):
+        with self.assertRaisesRegex(ValueError, "11 digits"):
+            self.api.handle_post(
+                "/api/auth/patient/register",
+                {
+                    "tc": "123",
+                    "birthDate": "1990-01-01",
+                    "firstName": "Ali",
+                    "lastName": "Veli",
+                },
+            )
 
 
 if __name__ == "__main__":

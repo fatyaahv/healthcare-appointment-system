@@ -3,25 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Public Health Appointment Portal</title>
+  <title>Healthcare Appointment Portal</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
     <div class="container topbar-inner">
-      <a class="brand" href="#overview" aria-label="Public Health Appointment Portal">
-        <span class="brand-mark" aria-hidden="true">
-          <span></span>
-        </span>
+      <a class="brand" href="#overview" aria-label="Healthcare Appointment Portal">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
         <span>
-          <strong>Public Health Appointment Portal</strong>
-          <small>XML Healthcare Appointment System</small>
+          <strong>Healthcare Appointment Portal</strong>
+          <small>Doctor slots, patient booking, XML API</small>
         </span>
       </a>
       <nav class="nav" aria-label="Primary navigation">
-        <a href="#services">Services</a>
-        <a href="#appointments">Appointments</a>
-        <a href="#integration">Integration</a>
+        <a href="#portal">Portal</a>
+        <a href="#services">Doctors</a>
+        <a href="#appointments">XML Records</a>
         <a href="/docs">Swagger</a>
       </nav>
     </div>
@@ -31,11 +29,11 @@
     <section class="hero" id="overview">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">Republic health services demonstration</p>
-          <h1>Trusted appointment data, served from validated XML.</h1>
-          <p class="lead">A formal public-service portal for clinics, doctors, patients, appointment records, API documentation, and external holiday integration.</p>
+          <p class="eyebrow">Healthcare appointment system</p>
+          <h1>Patients book available doctor slots in 15-minute intervals.</h1>
+          <p class="lead">Doctors open appointment times with code-based access. Patients register with TC and birth date, then reserve green slots while booked slots turn red.</p>
           <div class="hero-actions" aria-label="Project actions">
-            <a class="button primary" href="#appointments">View Appointments</a>
+            <a class="button primary" href="#portal">Open Portal</a>
             <a class="button secondary" href="/docs">Open Swagger</a>
           </div>
         </div>
@@ -45,7 +43,7 @@
     <section class="status-band" aria-label="System status">
       <div class="container status-grid" id="summaryCards">
         <article class="metric">
-          <span>Appointments</span>
+          <span>XML Appointments</span>
           <strong data-summary="totalAppointments">--</strong>
         </article>
         <article class="metric">
@@ -63,11 +61,116 @@
       </div>
     </section>
 
+    <section class="section portal-section" id="portal">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Live booking portal</p>
+          <h2>Patient and doctor access</h2>
+          <p class="section-copy">Doctor accounts are defined in the backend code. Demo login codes are shown in the doctor list for course testing.</p>
+        </div>
+
+        <div class="portal-layout">
+          <section class="portal-panel" aria-label="Patient registration and booking">
+            <div class="panel-header">
+              <h3>Patient Portal</h3>
+              <span id="patientState">Not logged in</span>
+            </div>
+
+            <form id="patientRegisterForm" class="form-grid">
+              <label>
+                TC
+                <input name="tc" inputmode="numeric" maxlength="11" pattern="\d{11}" placeholder="12345678901" required>
+              </label>
+              <label>
+                Birth Date
+                <input name="birthDate" type="date" required>
+              </label>
+              <label>
+                First Name
+                <input name="firstName" placeholder="Ayse" required>
+              </label>
+              <label>
+                Last Name
+                <input name="lastName" placeholder="Yilmaz" required>
+              </label>
+              <button class="button primary" type="submit">Register Patient</button>
+            </form>
+
+            <form id="patientLoginForm" class="form-grid compact-form">
+              <label>
+                TC
+                <input name="tc" inputmode="numeric" maxlength="11" pattern="\d{11}" required>
+              </label>
+              <label>
+                Birth Date
+                <input name="birthDate" type="date" required>
+              </label>
+              <button class="button secondary" type="submit">Patient Login</button>
+            </form>
+
+            <div class="booking-toolbar">
+              <label>
+                Doctor
+                <select id="bookingDoctor"></select>
+              </label>
+              <label>
+                Date
+                <input id="bookingDate" type="date">
+              </label>
+              <button class="button secondary" id="refreshSlots" type="button">Show Slots</button>
+            </div>
+
+            <div id="slotGrid" class="slot-grid" aria-live="polite"></div>
+            <div id="patientBookings" class="booking-list" aria-live="polite"></div>
+          </section>
+
+          <section class="portal-panel" aria-label="Doctor slot management">
+            <div class="panel-header">
+              <h3>Doctor Portal</h3>
+              <span id="doctorState">Not logged in</span>
+            </div>
+
+            <form id="doctorLoginForm" class="form-grid compact-form">
+              <label>
+                Doctor
+                <select name="doctorId" id="doctorLoginSelect"></select>
+              </label>
+              <label>
+                Code
+                <input name="code" type="password" placeholder="1001" required>
+              </label>
+              <button class="button primary" type="submit">Doctor Login</button>
+            </form>
+
+            <form id="slotCreateForm" class="form-grid">
+              <label>
+                Date
+                <input name="date" type="date" required>
+              </label>
+              <label>
+                Start
+                <input name="startTime" type="time" step="900" required>
+              </label>
+              <label>
+                End
+                <input name="endTime" type="time" step="900" required>
+              </label>
+              <button class="button secondary" type="submit">Create 15-Min Slots</button>
+            </form>
+
+            <div id="doctorBookings" class="booking-list" aria-live="polite"></div>
+          </section>
+        </div>
+
+        <p id="portalMessage" class="portal-message" role="status"></p>
+      </div>
+    </section>
+
     <section class="section" id="services">
       <div class="container">
         <div class="section-heading">
-          <p class="eyebrow">Public service directory</p>
-          <h2>Clinic and doctor registry</h2>
+          <p class="eyebrow">Doctor registry</p>
+          <h2>Code-defined doctors</h2>
         </div>
         <div class="directory" id="clinicDirectory" aria-live="polite"></div>
       </div>
@@ -77,7 +180,7 @@
       <div class="container appointments-layout">
         <div>
           <div class="section-heading compact">
-            <p class="eyebrow">Appointment records</p>
+            <p class="eyebrow">XML appointment records</p>
             <h2>Search official XML data</h2>
           </div>
           <div class="filters" aria-label="Appointment filters">
