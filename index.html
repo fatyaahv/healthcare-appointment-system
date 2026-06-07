@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,237 +9,294 @@
 <body>
   <header class="topbar">
     <div class="container topbar-inner">
-      <a class="brand" href="#overview" aria-label="Healthcare Appointment Portal">
+      <button class="brand link-button" type="button" data-view-target="home" aria-label="Ana sayfa">
         <span class="brand-mark" aria-hidden="true"><span></span></span>
         <span>
           <strong>Healthcare Appointment Portal</strong>
-          <small>Doctor slots, patient booking, XML API</small>
+          <small>XML tabanlı randevu sistemi</small>
         </span>
-      </a>
-      <nav class="nav" aria-label="Primary navigation">
-        <a href="#portal">Portal</a>
-        <a href="#services">Doctors</a>
-        <a href="#appointments">XML Records</a>
-        <a href="/docs">Swagger</a>
+      </button>
+      <nav class="nav" aria-label="Ana menü">
+        <button type="button" data-view-target="register">Kayıt Ol</button>
+        <button type="button" data-view-target="login">Giriş Yap</button>
+        <button type="button" data-view-target="home">Ana Sayfa</button>
       </nav>
     </div>
   </header>
 
   <main>
-    <section class="hero" id="overview">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">Healthcare appointment system</p>
-          <h1>Patients book available doctor slots in 15-minute intervals.</h1>
-          <p class="lead">Doctors open appointment times with code-based access. Patients register with TC and birth date, then reserve green slots while booked slots turn red.</p>
-          <div class="hero-actions" aria-label="Project actions">
-            <a class="button primary" href="#portal">Open Portal</a>
-            <a class="button secondary" href="/docs">Open Swagger</a>
+    <section class="view active" id="homeView">
+      <section class="hero" id="overview">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">XML healthcare appointment system</p>
+            <h1>Doktorlar randevu açar, hastalar uygun saatleri seçer.</h1>
+            <p class="lead">Hasta ve doktor işlemleri ayrı ekranlarda yapılır. Ana sayfa yalnızca sistem özetini, doktorları ve XML proje kayıtlarını gösterir.</p>
+            <div class="hero-actions" aria-label="Ana işlemler">
+              <button class="button primary" type="button" data-view-target="register">Kayıt Ol</button>
+              <button class="button secondary" type="button" data-view-target="login">Giriş Yap</button>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="status-band" aria-label="System status">
-      <div class="container status-grid" id="summaryCards">
-        <article class="metric">
-          <span>XML Appointments</span>
-          <strong data-summary="totalAppointments">--</strong>
-        </article>
-        <article class="metric">
-          <span>Clinics</span>
-          <strong data-summary="totalClinics">--</strong>
-        </article>
-        <article class="metric">
-          <span>Doctors</span>
-          <strong data-summary="totalDoctors">--</strong>
-        </article>
-        <article class="metric">
-          <span>Patients</span>
-          <strong data-summary="totalPatients">--</strong>
-        </article>
-      </div>
-    </section>
-
-    <section class="section portal-section" id="portal">
-      <div class="container">
-        <div class="section-heading">
-          <p class="eyebrow">Live booking portal</p>
-          <h2>Patient and doctor access</h2>
-          <p class="section-copy">Doctor accounts are defined in the backend code. Demo login codes are shown in the doctor list for course testing.</p>
+      <section class="status-band" aria-label="Sistem özeti">
+        <div class="container status-grid" id="summaryCards">
+          <article class="metric">
+            <span>Randevu Kayıtları</span>
+            <strong data-summary="totalAppointments">--</strong>
+          </article>
+          <article class="metric">
+            <span>Klinikler</span>
+            <strong data-summary="totalClinics">--</strong>
+          </article>
+          <article class="metric">
+            <span>Doktorlar</span>
+            <strong data-summary="totalDoctors">--</strong>
+          </article>
+          <article class="metric">
+            <span>Hastalar</span>
+            <strong data-summary="totalPatients">--</strong>
+          </article>
         </div>
+      </section>
 
-        <div class="portal-layout">
-          <section class="portal-panel" aria-label="Patient registration and booking">
-            <div class="panel-header">
-              <h3>Patient Portal</h3>
-              <span id="patientState">Not logged in</span>
+      <section class="section" id="services">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Doktorlar</p>
+            <h2>Bölümlere göre doktor listesi</h2>
+          </div>
+          <div class="directory" id="clinicDirectory" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="section public-bookings-section" id="publicBookings">
+        <div class="container">
+          <div class="section-heading compact">
+            <p class="eyebrow">Tum Randevular</p>
+            <h2>Alinan randevular</h2>
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Hasta</th>
+                  <th>TC</th>
+                  <th>Doktor</th>
+                  <th>Bolum</th>
+                  <th>Hastane</th>
+                </tr>
+              </thead>
+              <tbody id="publicBookingsTable"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="publicBookingsPagination" aria-label="Tum randevular sayfalama"></div>
+        </div>
+      </section>
+
+      <section class="section appointments-section" id="appointments">
+        <div class="container appointments-layout">
+          <div>
+            <div class="section-heading compact">
+              <p class="eyebrow">XML kayıtları</p>
+              <h2>Mevcut XML randevu verileri</h2>
             </div>
+            <div class="filters" aria-label="Randevu filtreleri">
+              <label>
+                Durum
+                <select id="statusFilter">
+                  <option value="">Tümü</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </label>
+              <label>
+                Doktor ID
+                <input id="doctorFilter" type="search" placeholder="D01">
+              </label>
+              <button class="button primary" id="applyFilters" type="button">Uygula</button>
+            </div>
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Tarih</th>
+                    <th>Doktor</th>
+                    <th>Hasta</th>
+                    <th>Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="appointmentsTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <aside class="notice-panel" aria-label="XML proje kanıtları">
+            <h3>XML Dosyaları</h3>
+            <a href="appointments.xml">XML Dataset</a>
+            <a href="healthcare.xsd">XSD Schema</a>
+            <a href="portal_data.xml">Portal XML Data</a>
+            <a href="report.html">XSLT Report</a>
+          </aside>
+        </div>
+      </section>
+    </section>
 
-            <form id="patientRegisterForm" class="form-grid">
-              <label>
-                TC
-                <input name="tc" inputmode="numeric" maxlength="11" pattern="\d{11}" placeholder="12345678901" required>
-              </label>
-              <label>
-                Birth Date
-                <input name="birthDate" type="date" required>
-              </label>
-              <label>
-                First Name
-                <input name="firstName" placeholder="Ayse" required>
-              </label>
-              <label>
-                Last Name
-                <input name="lastName" placeholder="Yilmaz" required>
-              </label>
-              <button class="button primary" type="submit">Register Patient</button>
-            </form>
+    <section class="view auth-page" id="registerView" hidden>
+      <div class="container page-shell">
+        <button class="button secondary back-button" type="button" data-view-target="home">Ana sayfaya dön</button>
+        <section class="portal-panel single-panel">
+          <div class="panel-header">
+            <h2>Hasta Kaydı</h2>
+            <span id="patientState">Hasta girişi yok</span>
+          </div>
+          <form id="patientRegisterForm" class="form-grid">
+            <label>
+              TC
+              <input name="tc" inputmode="numeric" maxlength="11" pattern="\d{11}" placeholder="12345678901" required>
+            </label>
+            <label>
+              Doğum Tarihi
+              <input name="birthDate" type="date" required>
+            </label>
+            <label>
+              İsim
+              <input name="firstName" placeholder="Ayşe" required>
+            </label>
+            <label>
+              Soyisim
+              <input name="lastName" placeholder="Yılmaz" required>
+            </label>
+            <button class="button primary" type="submit">Hasta Kaydı Oluştur</button>
+          </form>
+        </section>
+      </div>
+    </section>
 
+    <section class="view auth-page" id="loginView" hidden>
+      <div class="container page-shell">
+        <button class="button secondary back-button" type="button" data-view-target="home">Ana sayfaya dön</button>
+        <section class="portal-panel single-panel">
+          <div class="panel-header">
+            <h2>Giriş Yap</h2>
+            <span id="doctorState">Doktor girişi yok</span>
+          </div>
+          <div class="auth-switcher">
+            <label>
+              Giriş Türü
+              <select id="loginRole">
+                <option value="patient">Hasta</option>
+                <option value="doctor">Doktor</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="patientLoginBlock">
+            <h3>Hasta Girişi</h3>
             <form id="patientLoginForm" class="form-grid compact-form">
               <label>
                 TC
                 <input name="tc" inputmode="numeric" maxlength="11" pattern="\d{11}" required>
               </label>
               <label>
-                Birth Date
+                Doğum Tarihi
                 <input name="birthDate" type="date" required>
               </label>
-              <button class="button secondary" type="submit">Patient Login</button>
+              <button class="button primary" type="submit">Hasta Girişi</button>
             </form>
+          </div>
 
-            <div class="booking-toolbar">
-              <label>
-                Doctor
-                <select id="bookingDoctor"></select>
-              </label>
-              <label>
-                Date
-                <input id="bookingDate" type="date">
-              </label>
-              <button class="button secondary" id="refreshSlots" type="button">Show Slots</button>
-            </div>
-
-            <div id="slotGrid" class="slot-grid" aria-live="polite"></div>
-            <div id="patientBookings" class="booking-list" aria-live="polite"></div>
-          </section>
-
-          <section class="portal-panel" aria-label="Doctor slot management">
-            <div class="panel-header">
-              <h3>Doctor Portal</h3>
-              <span id="doctorState">Not logged in</span>
-            </div>
-
+          <div id="doctorLoginBlock" hidden>
+            <h3>Doktor Girişi</h3>
             <form id="doctorLoginForm" class="form-grid compact-form">
               <label>
-                Doctor
+                Doktor
                 <select name="doctorId" id="doctorLoginSelect"></select>
               </label>
               <label>
-                Code
+                Kod
                 <input name="code" type="password" placeholder="1001" required>
               </label>
-              <button class="button primary" type="submit">Doctor Login</button>
+              <button class="button primary" type="submit">Doktor Girişi</button>
             </form>
-
-            <form id="slotCreateForm" class="form-grid">
-              <label>
-                Date
-                <input name="date" type="date" required>
-              </label>
-              <label>
-                Start
-                <input name="startTime" type="time" step="900" required>
-              </label>
-              <label>
-                End
-                <input name="endTime" type="time" step="900" required>
-              </label>
-              <button class="button secondary" type="submit">Create 15-Min Slots</button>
-            </form>
-
-            <div id="doctorBookings" class="booking-list" aria-live="polite"></div>
-          </section>
-        </div>
-
-        <p id="portalMessage" class="portal-message" role="status"></p>
-      </div>
-    </section>
-
-    <section class="section" id="services">
-      <div class="container">
-        <div class="section-heading">
-          <p class="eyebrow">Doctor registry</p>
-          <h2>Code-defined doctors</h2>
-        </div>
-        <div class="directory" id="clinicDirectory" aria-live="polite"></div>
-      </div>
-    </section>
-
-    <section class="section appointments-section" id="appointments">
-      <div class="container appointments-layout">
-        <div>
-          <div class="section-heading compact">
-            <p class="eyebrow">XML appointment records</p>
-            <h2>Search official XML data</h2>
           </div>
-          <div class="filters" aria-label="Appointment filters">
+        </section>
+      </div>
+    </section>
+
+    <section class="view auth-page" id="patientView" hidden>
+      <div class="container page-shell">
+        <button class="button secondary back-button" type="button" data-view-target="home">Ana sayfaya dön</button>
+        <section class="portal-panel single-panel">
+          <div class="panel-header">
+            <h2>Randevu Al</h2>
+            <span id="patientPanelState">Hasta girişi yok</span>
+          </div>
+          <div class="booking-toolbar">
             <label>
-              Status
-              <select id="statusFilter">
-                <option value="">All</option>
-                <option value="Pending">Pending</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
+              Şehir
+              <select id="bookingCity"></select>
             </label>
             <label>
-              Doctor ID
-              <input id="doctorFilter" type="search" placeholder="D01">
+              İlçe
+              <select id="bookingDistrict"></select>
             </label>
-            <button class="button primary" id="applyFilters" type="button">Apply</button>
+            <label>
+              Hastane
+              <select id="bookingHospital"></select>
+            </label>
+            <label>
+              Bölüm
+              <select id="bookingDepartment"></select>
+            </label>
+            <label>
+              Doktor
+              <select id="bookingDoctor"></select>
+            </label>
+            <label>
+              Tarih
+              <input id="bookingDate" type="date">
+            </label>
+            <button class="button secondary" id="refreshSlots" type="button">Randevuları Göster</button>
           </div>
-          <div class="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date</th>
-                  <th>Doctor</th>
-                  <th>Patient</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="appointmentsTable"></tbody>
-            </table>
-          </div>
-        </div>
-        <aside class="notice-panel" aria-label="XML project evidence">
-          <h3>Project Evidence</h3>
-          <a href="appointments.xml">XML Dataset</a>
-          <a href="healthcare.xsd">XSD Schema</a>
-          <a href="report.html">XSLT Report</a>
-          <a href="DEPLOYMENT_PERSON3.md">Deployment Notes</a>
-        </aside>
+          <div id="slotGrid" class="slot-grid" aria-live="polite"></div>
+          <div id="patientBookings" class="booking-list" aria-live="polite"></div>
+        </section>
       </div>
     </section>
 
-    <section class="section integration-section" id="integration">
-      <div class="container integration-grid">
-        <div class="section-heading compact">
-          <p class="eyebrow">External integration</p>
-          <h2>Public holiday service</h2>
-          <p class="section-copy">The system checks national holiday data through a REST integration and keeps a local fallback for offline demonstrations.</p>
-        </div>
-        <div class="integration-panel">
-          <div>
-            <span class="panel-label">Integration Source</span>
-            <strong id="holidaySource">Loading</strong>
+    <section class="view auth-page" id="doctorView" hidden>
+      <div class="container page-shell">
+        <button class="button secondary back-button" type="button" data-view-target="home">Ana sayfaya dön</button>
+        <section class="portal-panel single-panel">
+          <div class="panel-header">
+            <h2>Doktor Randevu Oluşturma</h2>
+            <span id="doctorPanelState">Doktor girişi yok</span>
           </div>
-          <ul id="holidayList"></ul>
-        </div>
+          <form id="slotCreateForm" class="form-grid">
+            <label>
+              Tarih
+              <input name="date" type="date" required>
+            </label>
+            <label>
+              Başlangıç
+              <input name="startTime" type="time" step="900" required>
+            </label>
+            <label>
+              Bitiş
+              <input name="endTime" type="time" step="900" required>
+            </label>
+            <button class="button primary" type="submit">15 Dakikalık Randevuları Oluştur</button>
+          </form>
+          <div id="doctorBookings" class="booking-list" aria-live="polite"></div>
+        </section>
       </div>
     </section>
+
+    <p id="portalMessage" class="portal-message container" role="status"></p>
   </main>
 
   <footer class="footer">

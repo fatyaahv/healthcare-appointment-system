@@ -5,85 +5,13 @@ XML Course Final Project
 
 - Person 1: XML foundation, XSD validation, XPath queries, invalid XML examples
 - Person 2: XSLT transformation, XML parsing, generated XML outputs, error handling
-- Person 3: REST API, Swagger documentation, external service integration, testing, deployment
+- Person 3: REST API, external service integration, testing, deployment
 
-## Person 3 - Web Services & Integration
+## XML-Based Appointment Portal
 
-This project includes a Python REST API that reads the existing `appointments.xml` file and exposes the healthcare appointment data as JSON. It also includes a patient/doctor appointment portal.
+This project uses XML as the main data format. The portal stores patient registrations and live appointment slots in `portal_data.xml`.
 
-### Run the API
-
-```bash
-python api_server.py
-```
-
-API URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-Swagger documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-OpenAPI JSON:
-
-```text
-http://127.0.0.1:8000/openapi.json
-```
-
-### REST endpoints
-
-- `GET /api/health`
-- `GET /api/clinics`
-- `GET /api/doctors`
-- `GET /api/patients`
-- `GET /api/appointments`
-- `GET /api/appointments?status=Pending`
-- `GET /api/appointments?doctorId=D01`
-- `GET /api/appointments/A01`
-- `GET /api/reports/summary`
-- `GET /api/integration/holidays?year=2026&countryCode=TR`
-- `GET /api/portal/doctors`
-- `GET /api/slots?doctorId=D01&date=2026-06-20`
-- `POST /api/auth/patient/register`
-- `POST /api/auth/patient/login`
-- `POST /api/auth/doctor/login`
-- `POST /api/doctor/slots`
-- `POST /api/patient/appointments`
-- `GET /api/doctor/bookings?doctorId=D01&code=1001`
-- `GET /api/patient/bookings?tc=12345678901&birthDate=1990-01-01`
-
-The holiday endpoint integrates with the external Nager.Date public holiday API and includes an offline fallback for classroom demos without internet access.
-
-### Login and appointment booking
-
-- Doctors are defined in `api_server.py` with fixed demo codes: `D01=1001`, `D02=1002`, `D03=1003`, `D04=1004`, `D05=1005`.
-- Doctors can create appointment slots by date and start/end time.
-- Slots are generated every 15 minutes.
-- Available slots are shown in green.
-- Booked slots are shown in red.
-- Patients register with TC, birth date, first name, and last name.
-- TC must be exactly 11 digits.
-- Patient login asks for TC and birth date.
-- Doctors can see booked patients' first name, last name, and TC.
-
-### Run tests
-
-```bash
-python -m unittest test_api.py
-```
-
-More deployment details are documented in `DEPLOYMENT_PERSON3.md`.
-
-## Website
-
-The project now includes an official-style public health appointment portal.
-
-Run:
+### Run
 
 ```bash
 python api_server.py
@@ -95,10 +23,86 @@ Open:
 http://127.0.0.1:8000/
 ```
 
-Swagger is still available at:
+Backend documentation is available directly at:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-Website details are documented in `WEBSITE_PERSON3.md`.
+The XML endpoint document is available at:
+
+```text
+http://127.0.0.1:8000/openapi.xml
+```
+
+These documentation links are not shown in the frontend navigation.
+
+### Main XML Files
+
+- `appointments.xml`: original XML appointment dataset
+- `healthcare.xsd`: XML schema validation file
+- `portal_data.xml`: patient registration and doctor-created live appointment slots
+- `appointment_report.xsl`: XSLT report transformation
+- `report.html`: generated HTML report
+
+### Portal Flow
+
+- The screen has `Kayıt Ol` and `Giriş Yap` options.
+- Registration is only for patients.
+- Patient registration asks for TC, birth date, first name, and last name.
+- TC must be exactly 11 digits.
+- Login has role selection: patient or doctor.
+- Patient login asks for TC and birth date.
+- Doctor login asks for doctor ID and code.
+- Doctors create appointment slots after login.
+- Doctor-created slots are generated every 15 minutes.
+- Patients filter appointments by city, district, hospital, department, doctor, and date.
+- Available slots are green.
+- Booked slots are red.
+- Doctors can see booked patients' first name, last name, and TC.
+
+### Current Location Data
+
+- City: Istanbul
+- District: Umraniye
+- Hospital: Umraniye Egitim ve Arastirma Hastanesi
+
+Hospitals and departments are dropdown selections, not free-text fields.
+
+### Departments and Doctor Codes
+
+Kardiyoloji:
+
+- D01 Ahmet Yilmaz: 1001
+- D02 Elif Kaya: 1002
+- D03 Mert Aydin: 1003
+
+Goz Hastaliklari:
+
+- D04 Can Demir: 1004
+- D05 Zeynep Sahin: 1005
+- D06 Deniz Arslan: 1006
+
+Cocuk Sagligi:
+
+- D07 Murat Celik: 1007
+- D08 Selin Yildiz: 1008
+- D09 Burak Ozturk: 1009
+
+Ortopedi:
+
+- D10 Hakan Arslan: 1010
+- D11 Yasemin Bulut: 1011
+- D12 Omer Faruk: 1012
+
+Dermatoloji:
+
+- D13 Merve Acar: 1013
+- D14 Kerem Polat: 1014
+- D15 Ece Kurt: 1015
+
+### Run Tests
+
+```bash
+python -m unittest test_api.py
+```

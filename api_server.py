@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import hashlib
 import mimetypes
 import re
 import threading
@@ -17,7 +17,7 @@ from external_service import HolidayService
 
 BASE_DIR = Path(__file__).resolve().parent
 XML_FILE = BASE_DIR / "appointments.xml"
-PORTAL_DATA_FILE = BASE_DIR / "portal_data.json"
+PORTAL_DATA_FILE = BASE_DIR / "portal_data.xml"
 STATIC_FILES = {
     "/": BASE_DIR / "index.html",
     "/index.html": BASE_DIR / "index.html",
@@ -29,14 +29,86 @@ NS = {"h": NS_URI}
 ALLOWED_STATUSES = {"Pending", "Completed", "Cancelled"}
 TC_PATTERN = re.compile(r"^\d{11}$")
 
-# Doctors are intentionally code-defined. Patients cannot register doctor accounts.
-DOCTOR_CODES = {
-    "D01": "1001",
-    "D02": "1002",
-    "D03": "1003",
-    "D04": "1004",
-    "D05": "1005",
+# Portal doctors and selectable location/department data are intentionally code-defined.
+# Patients cannot register doctor accounts.
+LOCATION_CATALOG = {
+    "cities": [
+        {
+            "cityId": "IST",
+            "cityName": "Istanbul",
+            "districts": [
+                {
+                    "districtId": "UMR",
+                    "districtName": "Umraniye",
+                    "hospitals": [
+                        {
+                            "hospitalId": "H01",
+                            "hospitalName": "Umraniye Egitim ve Arastirma Hastanesi",
+                        }
+                    ],
+                }
+            ],
+        }
+    ],
+    "departments": [
+        {"departmentId": "CARD", "departmentName": "Kardiyoloji"},
+        {"departmentId": "EYE", "departmentName": "Goz Hastaliklari"},
+        {"departmentId": "PED", "departmentName": "Cocuk Sagligi"},
+        {"departmentId": "ORT", "departmentName": "Ortopedi"},
+        {"departmentId": "DERM", "departmentName": "Dermatoloji"},
+    ],
 }
+
+PORTAL_DOCTORS = [
+    {"doctorId": "D01", "firstName": "Ahmet", "lastName": "Yilmaz", "departmentId": "CARD", "loginCode": "1001"},
+    {"doctorId": "D02", "firstName": "Elif", "lastName": "Kaya", "departmentId": "CARD", "loginCode": "1002"},
+    {"doctorId": "D03", "firstName": "Mert", "lastName": "Aydin", "departmentId": "CARD", "loginCode": "1003"},
+    {"doctorId": "D04", "firstName": "Can", "lastName": "Demir", "departmentId": "EYE", "loginCode": "1004"},
+    {"doctorId": "D05", "firstName": "Zeynep", "lastName": "Sahin", "departmentId": "EYE", "loginCode": "1005"},
+    {"doctorId": "D06", "firstName": "Deniz", "lastName": "Arslan", "departmentId": "EYE", "loginCode": "1006"},
+    {"doctorId": "D07", "firstName": "Murat", "lastName": "Celik", "departmentId": "PED", "loginCode": "1007"},
+    {"doctorId": "D08", "firstName": "Selin", "lastName": "Yildiz", "departmentId": "PED", "loginCode": "1008"},
+    {"doctorId": "D09", "firstName": "Burak", "lastName": "Ozturk", "departmentId": "PED", "loginCode": "1009"},
+    {"doctorId": "D10", "firstName": "Hakan", "lastName": "Arslan", "departmentId": "ORT", "loginCode": "1010"},
+    {"doctorId": "D11", "firstName": "Yasemin", "lastName": "Bulut", "departmentId": "ORT", "loginCode": "1011"},
+    {"doctorId": "D12", "firstName": "Omer", "lastName": "Faruk", "departmentId": "ORT", "loginCode": "1012"},
+    {"doctorId": "D13", "firstName": "Merve", "lastName": "Acar", "departmentId": "DERM", "loginCode": "1013"},
+    {"doctorId": "D14", "firstName": "Kerem", "lastName": "Polat", "departmentId": "DERM", "loginCode": "1014"},
+    {"doctorId": "D15", "firstName": "Ece", "lastName": "Kurt", "departmentId": "DERM", "loginCode": "1015"},
+]
+
+
+def catalog_hospital() -> dict[str, str]:
+    return LOCATION_CATALOG["cities"][0]["districts"][0]["hospitals"][0]
+
+
+def department_name(department_id: str) -> str:
+    department = next(
+        (item for item in LOCATION_CATALOG["departments"] if item["departmentId"] == department_id),
+        None,
+    )
+    return department["departmentName"] if department else ""
+
+
+def portal_doctor(doctor_id: str) -> dict[str, str] | None:
+    doctor = next((item for item in PORTAL_DOCTORS if item["doctorId"].upper() == doctor_id.upper()), None)
+    if not doctor:
+        return None
+    hospital = catalog_hospital()
+    return {
+        **doctor,
+        "cityId": "IST",
+        "cityName": "Istanbul",
+        "districtId": "UMR",
+        "districtName": "Umraniye",
+        "hospitalId": hospital["hospitalId"],
+        "hospitalName": hospital["hospitalName"],
+        "departmentName": department_name(doctor["departmentId"]),
+    }
+
+
+def list_portal_doctors() -> list[dict[str, str]]:
+    return [portal_doctor(doctor["doctorId"]) for doctor in PORTAL_DOCTORS]
 
 
 def text(parent: ET.Element, query: str) -> str:
@@ -49,12 +121,12 @@ def first_query_value(query: dict[str, list[str]], name: str) -> str | None:
     return values[0] if values else None
 
 
-def parse_json_body(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
+def parse_request_body(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
     length = int(handler.headers.get("Content-Length", "0"))
     if length == 0:
         return {}
     raw_body = handler.rfile.read(length).decode("utf-8")
-    return json.loads(raw_body)
+    return {key: values[0] for key, values in parse_qs(raw_body).items()}
 
 
 def parse_date(value: str, field_name: str = "date") -> date:
@@ -82,6 +154,44 @@ def ensure_required(payload: dict[str, Any], names: list[str]) -> None:
     missing = [name for name in names if not str(payload.get(name, "")).strip()]
     if missing:
         raise ValueError(f"Missing required field(s): {', '.join(missing)}")
+
+
+def add_text(parent: ET.Element, tag: str, value: Any) -> ET.Element:
+    node = ET.SubElement(parent, tag)
+    if value is None:
+        node.text = ""
+    elif isinstance(value, bool):
+        node.text = "true" if value else "false"
+    else:
+        node.text = str(value)
+    return node
+
+
+def append_xml(parent: ET.Element, key: str, value: Any) -> None:
+    if isinstance(value, dict):
+        node = ET.SubElement(parent, key)
+        for child_key, child_value in value.items():
+            append_xml(node, child_key, child_value)
+    elif isinstance(value, list):
+        list_node = ET.SubElement(parent, key)
+        item_tag = key[:-1] if key.endswith("s") else "item"
+        for item in value:
+            append_xml(list_node, item_tag, item)
+    else:
+        add_text(parent, key, value)
+
+
+def payload_to_xml(payload: dict[str, Any], root_name: str = "response") -> bytes:
+    root = ET.Element(root_name)
+    for key, value in payload.items():
+        append_xml(root, key, value)
+    ET.indent(root, space="  ")
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def node_text(parent: ET.Element, tag: str) -> str:
+    node = parent.find(tag)
+    return node.text.strip() if node is not None and node.text else ""
 
 
 class AppointmentRepository:
@@ -199,10 +309,67 @@ class PortalStore:
             self._save({"patients": [], "slots": []})
 
     def _load(self) -> dict[str, Any]:
-        return json.loads(self.data_path.read_text(encoding="utf-8"))
+        root = ET.parse(self.data_path).getroot()
+        patients = []
+        for patient in root.findall("patients/patient"):
+            patients.append(
+                {
+                    "tc": node_text(patient, "tc"),
+                    "birthDate": node_text(patient, "birthDate"),
+                    "firstName": node_text(patient, "firstName"),
+                    "lastName": node_text(patient, "lastName"),
+                }
+            )
+        slots = []
+        for slot in root.findall("slots/slot"):
+            slots.append(
+                {
+                    "slotId": node_text(slot, "slotId"),
+                    "doctorId": node_text(slot, "doctorId"),
+                    "cityId": node_text(slot, "cityId"),
+                    "districtId": node_text(slot, "districtId"),
+                    "hospitalId": node_text(slot, "hospitalId"),
+                    "departmentId": node_text(slot, "departmentId"),
+                    "date": node_text(slot, "date"),
+                    "time": node_text(slot, "time"),
+                    "durationMinutes": int(node_text(slot, "durationMinutes") or "15"),
+                    "isBooked": node_text(slot, "isBooked") == "true",
+                    "patientTc": node_text(slot, "patientTc") or None,
+                }
+            )
+        return {"patients": patients, "slots": slots}
 
     def _save(self, data: dict[str, Any]) -> None:
-        self.data_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        root = ET.Element("portalData")
+        patients_node = ET.SubElement(root, "patients")
+        for patient in data["patients"]:
+            patient_node = ET.SubElement(patients_node, "patient")
+            add_text(patient_node, "tc", patient.get("tc", ""))
+            add_text(patient_node, "birthDate", patient.get("birthDate", ""))
+            add_text(patient_node, "firstName", patient.get("firstName", ""))
+            add_text(patient_node, "lastName", patient.get("lastName", ""))
+
+        slots_node = ET.SubElement(root, "slots")
+        for slot in data["slots"]:
+            slot_node = ET.SubElement(slots_node, "slot")
+            for field in (
+                "slotId",
+                "doctorId",
+                "cityId",
+                "districtId",
+                "hospitalId",
+                "departmentId",
+                "date",
+                "time",
+                "durationMinutes",
+                "isBooked",
+                "patientTc",
+            ):
+                add_text(slot_node, field, slot.get(field))
+
+        ET.indent(root, space="  ")
+        tree = ET.ElementTree(root)
+        tree.write(self.data_path, encoding="utf-8", xml_declaration=True)
 
     def register_patient(self, payload: dict[str, Any]) -> dict[str, str]:
         ensure_required(payload, ["tc", "birthDate", "firstName", "lastName"])
@@ -242,11 +409,9 @@ class PortalStore:
 
     def authenticate_doctor(self, doctor_id: str, code: str, repository: AppointmentRepository) -> dict[str, str]:
         doctor_id = doctor_id.upper().strip()
-        if DOCTOR_CODES.get(doctor_id) != str(code).strip():
+        doctor = portal_doctor(doctor_id)
+        if doctor is None or doctor.get("loginCode") != str(code).strip():
             raise PermissionError("Doctor login failed. Check doctor ID and code.")
-        doctor = repository.get_doctor(doctor_id)
-        if doctor is None:
-            raise PermissionError("Doctor is not defined in the XML doctor registry.")
         return doctor
 
     def create_slots(self, payload: dict[str, Any], repository: AppointmentRepository) -> list[dict[str, Any]]:
@@ -271,6 +436,10 @@ class PortalStore:
                     slot = {
                         "slotId": slot_id,
                         "doctorId": doctor["doctorId"],
+                        "cityId": doctor["cityId"],
+                        "districtId": doctor["districtId"],
+                        "hospitalId": doctor["hospitalId"],
+                        "departmentId": doctor["departmentId"],
                         "date": slot_date,
                         "time": cursor.strftime("%H:%M"),
                         "durationMinutes": 15,
@@ -285,10 +454,27 @@ class PortalStore:
             self._save(data)
         return created
 
-    def list_slots(self, repository: AppointmentRepository, doctor_id: str | None = None, slot_date: str | None = None) -> list[dict[str, Any]]:
+    def list_slots(
+        self,
+        repository: AppointmentRepository,
+        doctor_id: str | None = None,
+        slot_date: str | None = None,
+        city_id: str | None = None,
+        district_id: str | None = None,
+        hospital_id: str | None = None,
+        department_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         with self._lock:
             data = self._load()
             slots = [self._decorate_slot(slot, data, repository) for slot in data["slots"]]
+        if city_id:
+            slots = [slot for slot in slots if slot.get("cityId", "").upper() == city_id.upper()]
+        if district_id:
+            slots = [slot for slot in slots if slot.get("districtId", "").upper() == district_id.upper()]
+        if hospital_id:
+            slots = [slot for slot in slots if slot.get("hospitalId", "").upper() == hospital_id.upper()]
+        if department_id:
+            slots = [slot for slot in slots if slot.get("departmentId", "").upper() == department_id.upper()]
         if doctor_id:
             slots = [slot for slot in slots if slot["doctorId"].upper() == doctor_id.upper()]
         if slot_date:
@@ -339,19 +525,66 @@ class PortalStore:
                 if slot["patientTc"] == patient["tc"]
             ]
 
+    def list_public_bookings(self, repository: AppointmentRepository) -> list[dict[str, Any]]:
+        with self._lock:
+            data = self._load()
+            bookings = [
+                self._decorate_slot(slot, data, repository)
+                for slot in data["slots"]
+                if slot["isBooked"]
+            ]
+        for booking in bookings:
+            booking["patientPublic"] = self._public_patient(booking.get("patient"))
+            booking.pop("patient", None)
+            booking.pop("patientTc", None)
+        return bookings
+
+    def booked_count(self) -> int:
+        with self._lock:
+            return sum(1 for slot in self._load()["slots"] if slot["isBooked"])
+
+    def patient_count(self) -> int:
+        with self._lock:
+            return len(self._load()["patients"])
+
     def _find_patient(self, data: dict[str, Any], tc: str) -> dict[str, str] | None:
         return next((patient for patient in data["patients"] if patient["tc"] == tc), None)
 
     def _find_slot(self, data: dict[str, Any], slot_id: str) -> dict[str, Any] | None:
         return next((slot for slot in data["slots"] if slot["slotId"] == slot_id), None)
 
+    def _public_patient(self, patient: dict[str, str] | None) -> dict[str, str]:
+        if not patient:
+            return {"firstNamePrefix": "", "lastNamePrefix": "", "tcMaskedHash": ""}
+        tc = patient.get("tc", "")
+        digest = hashlib.sha256(tc.encode("utf-8")).hexdigest()[:8]
+        return {
+            "firstNamePrefix": patient.get("firstName", "")[:2],
+            "lastNamePrefix": patient.get("lastName", "")[:2],
+            "tcMaskedHash": f"{tc[:2]}******-{digest}",
+        }
+
     def _decorate_slot(self, slot: dict[str, Any], data: dict[str, Any], repository: AppointmentRepository) -> dict[str, Any]:
-        doctor = repository.get_doctor(slot["doctorId"]) or {"firstName": "", "lastName": "", "clinicName": ""}
+        doctor = portal_doctor(slot["doctorId"]) or {
+            "firstName": "",
+            "lastName": "",
+            "departmentName": "",
+            "hospitalName": "",
+            "cityName": "",
+            "districtName": "",
+        }
         patient = self._find_patient(data, slot["patientTc"]) if slot.get("patientTc") else None
         return {
             **slot,
             "doctorName": f"Dr. {doctor.get('firstName', '')} {doctor.get('lastName', '')}".strip(),
-            "clinicName": doctor.get("clinicName", ""),
+            "cityId": doctor.get("cityId", slot.get("cityId", "")),
+            "cityName": doctor.get("cityName", ""),
+            "districtId": doctor.get("districtId", slot.get("districtId", "")),
+            "districtName": doctor.get("districtName", ""),
+            "hospitalId": doctor.get("hospitalId", slot.get("hospitalId", "")),
+            "hospitalName": doctor.get("hospitalName", ""),
+            "departmentId": doctor.get("departmentId", slot.get("departmentId", "")),
+            "departmentName": doctor.get("departmentName", ""),
             "patient": patient,
         }
 
@@ -398,7 +631,11 @@ class AppointmentApi:
                 return HTTPStatus.NOT_FOUND, {"error": f"Appointment {appointment_id} was not found."}
             return HTTPStatus.OK, {"appointment": appointment}
         if path == "/api/reports/summary":
-            return HTTPStatus.OK, self.repository.appointment_summary()
+            summary = self.repository.appointment_summary()
+            summary["totalAppointments"] = int(summary["totalAppointments"]) + self.portal_store.booked_count()
+            summary["totalDoctors"] = len(list_portal_doctors())
+            summary["totalPatients"] = self.portal_store.patient_count()
+            return HTTPStatus.OK, summary
         if path == "/api/integration/holidays":
             year_value = first_query_value(query, "year") or str(datetime.now().year)
             country_code = first_query_value(query, "countryCode") or "TR"
@@ -407,12 +644,16 @@ class AppointmentApi:
             except ValueError:
                 return HTTPStatus.BAD_REQUEST, {"error": "year must be a number."}
             return HTTPStatus.OK, self.holiday_service.get_public_holidays(year, country_code)
+        if path == "/api/portal/catalog":
+            return HTTPStatus.OK, LOCATION_CATALOG
         if path == "/api/portal/doctors":
-            doctors = [
-                {**doctor, "loginCode": DOCTOR_CODES.get(doctor["doctorId"], "")}
-                for doctor in self.repository.list_doctors()
-                if doctor["doctorId"] in DOCTOR_CODES
-            ]
+            doctors = list_portal_doctors()
+            department_id = first_query_value(query, "departmentId")
+            hospital_id = first_query_value(query, "hospitalId")
+            if department_id:
+                doctors = [doctor for doctor in doctors if doctor["departmentId"].upper() == department_id.upper()]
+            if hospital_id:
+                doctors = [doctor for doctor in doctors if doctor["hospitalId"].upper() == hospital_id.upper()]
             return HTTPStatus.OK, {"doctors": doctors}
         if path == "/api/slots":
             return HTTPStatus.OK, {
@@ -420,12 +661,18 @@ class AppointmentApi:
                     self.repository,
                     doctor_id=first_query_value(query, "doctorId"),
                     slot_date=first_query_value(query, "date"),
+                    city_id=first_query_value(query, "cityId"),
+                    district_id=first_query_value(query, "districtId"),
+                    hospital_id=first_query_value(query, "hospitalId"),
+                    department_id=first_query_value(query, "departmentId"),
                 )
             }
         if path == "/api/doctor/bookings":
             return HTTPStatus.OK, {"appointments": self.portal_store.list_doctor_bookings(query, self.repository)}
         if path == "/api/patient/bookings":
             return HTTPStatus.OK, {"appointments": self.portal_store.list_patient_bookings(query, self.repository)}
+        if path == "/api/public/bookings":
+            return HTTPStatus.OK, {"appointments": self.portal_store.list_public_bookings(self.repository)}
         return HTTPStatus.NOT_FOUND, {"error": f"No route found for {path}"}
 
     def handle_post(self, path: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
@@ -446,35 +693,6 @@ class AppointmentApi:
             slot = self.portal_store.book_slot(payload, self.repository)
             return HTTPStatus.CREATED, {"appointment": slot}
         return HTTPStatus.NOT_FOUND, {"error": f"No route found for {path}"}
-
-
-def build_openapi_document() -> dict[str, Any]:
-    return {
-        "openapi": "3.0.3",
-        "info": {
-            "title": "Healthcare Appointment System API",
-            "version": "1.1.0",
-            "description": "REST API for XML appointment data, patient registration, doctor slot management, and appointment booking.",
-        },
-        "servers": [{"url": "http://localhost:8000"}],
-        "paths": {
-            "/api/health": {"get": {"summary": "Check API health", "responses": {"200": {"description": "API is running"}}}},
-            "/api/clinics": {"get": {"summary": "List clinics and doctors", "responses": {"200": {"description": "Clinics returned"}}}},
-            "/api/doctors": {"get": {"summary": "List doctors", "responses": {"200": {"description": "Doctors returned"}}}},
-            "/api/appointments": {"get": {"summary": "List XML appointment records", "responses": {"200": {"description": "Appointments returned"}}}},
-            "/api/portal/doctors": {"get": {"summary": "List code-defined doctors", "responses": {"200": {"description": "Doctors returned"}}}},
-            "/api/slots": {"get": {"summary": "List doctor-created appointment slots", "responses": {"200": {"description": "Slots returned"}}}},
-            "/api/auth/patient/register": {"post": {"summary": "Register patient with TC and birth date", "responses": {"201": {"description": "Patient registered"}}}},
-            "/api/auth/patient/login": {"post": {"summary": "Login patient with TC and birth date", "responses": {"200": {"description": "Patient authenticated"}}}},
-            "/api/auth/doctor/login": {"post": {"summary": "Login doctor with doctor ID and code", "responses": {"200": {"description": "Doctor authenticated"}}}},
-            "/api/doctor/slots": {"post": {"summary": "Create 15-minute doctor slots", "responses": {"201": {"description": "Slots created"}}}},
-            "/api/patient/appointments": {"post": {"summary": "Book an available appointment slot", "responses": {"201": {"description": "Appointment booked"}}}},
-            "/api/doctor/bookings": {"get": {"summary": "List booked patients for a doctor", "responses": {"200": {"description": "Bookings returned"}}}},
-            "/api/patient/bookings": {"get": {"summary": "List a patient's booked appointments", "responses": {"200": {"description": "Bookings returned"}}}},
-            "/api/reports/summary": {"get": {"summary": "Get appointment totals", "responses": {"200": {"description": "Summary returned"}}}},
-            "/api/integration/holidays": {"get": {"summary": "Fetch public holidays", "responses": {"200": {"description": "Holiday data returned"}}}},
-        },
-    }
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -498,33 +716,31 @@ class RequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/docs":
             self.send_html(swagger_ui_html())
             return
-        if parsed.path == "/openapi.json":
-            self.send_json(HTTPStatus.OK, build_openapi_document())
+        if parsed.path == "/openapi.xml":
+            self.send_xml(HTTPStatus.OK, build_openapi_document())
             return
 
         self._send_api_response(lambda: self.api.handle_get(parsed.path, parse_qs(parsed.query)))
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        self._send_api_response(lambda: self.api.handle_post(parsed.path, parse_json_body(self)))
+        self._send_api_response(lambda: self.api.handle_post(parsed.path, parse_request_body(self)))
 
     def _send_api_response(self, handler) -> None:
         try:
             status, payload = handler()
-        except json.JSONDecodeError:
-            status, payload = HTTPStatus.BAD_REQUEST, {"error": "Request body must be valid JSON."}
         except ValueError as exc:
             status, payload = HTTPStatus.BAD_REQUEST, {"error": str(exc)}
         except PermissionError as exc:
             status, payload = HTTPStatus.UNAUTHORIZED, {"error": str(exc)}
         except LookupError as exc:
             status, payload = HTTPStatus.NOT_FOUND, {"error": str(exc)}
-        self.send_json(status, payload)
+        self.send_xml(status, payload)
 
-    def send_json(self, status: int, payload: dict[str, Any]) -> None:
-        body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+    def send_xml(self, status: int, payload: dict[str, Any]) -> None:
+        body = payload_to_xml(payload)
         self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Type", "application/xml; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -541,10 +757,10 @@ class RequestHandler(BaseHTTPRequestHandler):
     def send_file(self, file_path: Path) -> None:
         resolved = file_path.resolve()
         if BASE_DIR not in resolved.parents and resolved != BASE_DIR:
-            self.send_json(HTTPStatus.FORBIDDEN, {"error": "Forbidden"})
+            self.send_xml(HTTPStatus.FORBIDDEN, {"error": "Forbidden"})
             return
         if not resolved.exists() or not resolved.is_file():
-            self.send_json(HTTPStatus.NOT_FOUND, {"error": "File not found"})
+            self.send_xml(HTTPStatus.NOT_FOUND, {"error": "File not found"})
             return
 
         body = resolved.read_bytes()
@@ -558,20 +774,76 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+def build_openapi_document() -> dict[str, Any]:
+    return {
+        "info": {
+            "title": "Healthcare Appointment System API",
+            "version": "1.2.0",
+            "description": "XML-based healthcare appointment portal API.",
+        },
+        "servers": [{"url": "http://127.0.0.1:8000"}],
+        "paths": {
+            "path": [
+                {"url": "/api/health", "method": "GET", "summary": "Check API health"},
+                {"url": "/api/portal/catalog", "method": "GET", "summary": "List cities, districts, hospitals, and departments"},
+                {"url": "/api/portal/doctors", "method": "GET", "summary": "List code-defined doctors"},
+                {"url": "/api/slots", "method": "GET", "summary": "List doctor-created appointment slots"},
+                {"url": "/api/auth/patient/register", "method": "POST", "summary": "Register patient"},
+                {"url": "/api/auth/patient/login", "method": "POST", "summary": "Login patient"},
+                {"url": "/api/auth/doctor/login", "method": "POST", "summary": "Login doctor"},
+                {"url": "/api/doctor/slots", "method": "POST", "summary": "Create 15-minute doctor slots"},
+                {"url": "/api/patient/appointments", "method": "POST", "summary": "Book an available appointment slot"},
+                {"url": "/api/doctor/bookings", "method": "GET", "summary": "List booked patients for a doctor"},
+                {"url": "/api/patient/bookings", "method": "GET", "summary": "List patient bookings"},
+            ]
+        },
+    }
+
+
 def swagger_ui_html() -> str:
     return """<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Healthcare Appointment System API</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+  <title>Healthcare Appointment System API Docs</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; color: #102033; background: #f6f7f9; }
+    main { width: min(980px, calc(100% - 32px)); margin: 40px auto; }
+    h1 { margin-bottom: 8px; color: #142f4c; }
+    .panel { background: #fff; border: 1px solid #d9e0e8; border-radius: 8px; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px; background: #fff; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #d9e0e8; text-align: left; }
+    th { background: #edf3f8; color: #142f4c; }
+    code { font-family: Consolas, monospace; color: #8a1f2d; }
+    .method { font-weight: 800; color: #0f654f; }
+  </style>
 </head>
 <body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-  <script>
-    window.onload = () => SwaggerUIBundle({ url: "/openapi.json", dom_id: "#swagger-ui" });
-  </script>
+  <main>
+    <h1>Healthcare Appointment System API Docs</h1>
+    <p>Backend documentation page. The frontend intentionally does not link here.</p>
+    <div class="panel">
+      <p>OpenAPI-style XML document:</p>
+      <p><a href="/openapi.xml">/openapi.xml</a></p>
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method">GET</td><td><code>/api/health</code></td><td>Check API health</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/portal/catalog</code></td><td>List city, district, hospital, and department selections</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/portal/doctors</code></td><td>List code-defined doctors</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/slots</code></td><td>List appointment slots with filters</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/auth/patient/register</code></td><td>Register patient</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/auth/patient/login</code></td><td>Login patient</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/auth/doctor/login</code></td><td>Login doctor</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/doctor/slots</code></td><td>Create 15-minute doctor slots</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/patient/appointments</code></td><td>Book slot</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/doctor/bookings</code></td><td>Doctor sees booked patient name, surname, and TC</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
 </body>
 </html>"""
 
@@ -579,7 +851,7 @@ def swagger_ui_html() -> str:
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     server = ThreadingHTTPServer((host, port), RequestHandler)
     print(f"API running at http://{host}:{port}")
-    print(f"Swagger documentation at http://{host}:{port}/docs")
+    print(f"Backend docs at http://{host}:{port}/docs")
     server.serve_forever()
 
 

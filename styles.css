@@ -32,6 +32,18 @@ a {
   text-decoration: none;
 }
 
+button {
+  font: inherit;
+}
+
+.link-button {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -119,15 +131,20 @@ img {
   justify-content: flex-end;
 }
 
-.nav a {
+.nav a,
+.nav button {
   padding: 10px 12px;
   color: var(--navy);
+  background: transparent;
+  border: 0;
   font-weight: 700;
   font-size: 0.9rem;
   border-radius: 6px;
+  cursor: pointer;
 }
 
-.nav a:hover {
+.nav a:hover,
+.nav button:hover {
   background: #edf3f8;
 }
 
@@ -258,6 +275,26 @@ h3 {
   padding: 72px 0;
 }
 
+.view[hidden] {
+  display: none;
+}
+
+.page-shell {
+  min-height: calc(100vh - 148px);
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 34px 0 72px;
+}
+
+.single-panel {
+  max-width: 920px;
+}
+
+.back-button {
+  width: max-content;
+}
+
 .section-heading {
   max-width: 760px;
   margin-bottom: 28px;
@@ -318,7 +355,8 @@ h3 {
 }
 
 .form-grid,
-.booking-toolbar {
+.booking-toolbar,
+.auth-switcher {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -337,9 +375,19 @@ h3 {
 }
 
 .booking-toolbar {
-  grid-template-columns: minmax(0, 1fr) 160px auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   padding-top: 16px;
   border-top: 1px solid var(--line);
+}
+
+.auth-switcher {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.booking-toolbar label:nth-child(3),
+.booking-toolbar label:nth-child(5) {
+  grid-column: span 2;
 }
 
 .slot-grid {
@@ -504,6 +552,35 @@ h3 {
   background: #fff;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+
+.public-bookings-section {
+  background: #eef4f4;
+  border-top: 1px solid var(--line);
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pagination button {
+  min-width: 40px;
+  min-height: 36px;
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  color: #fff;
+  background: var(--navy);
+  border-color: var(--navy);
 }
 
 .appointments-layout {
@@ -730,6 +807,7 @@ tr:last-child td {
   .form-grid,
   .compact-form,
   .booking-toolbar,
+  .auth-switcher,
   .integration-panel ul {
     grid-template-columns: 1fr;
   }
@@ -739,6 +817,11 @@ tr:last-child td {
   .form-grid .button,
   .booking-toolbar .button {
     width: 100%;
+  }
+
+  .booking-toolbar label:nth-child(3),
+  .booking-toolbar label:nth-child(5) {
+    grid-column: auto;
   }
 
   .panel-header {

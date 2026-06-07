@@ -1,39 +1,18 @@
 from __future__ import annotations
 
-import json
 from typing import Any
-from urllib.error import URLError
-from urllib.request import urlopen
 
 
 class HolidayService:
-    """Small external REST integration used by the API demo."""
-
-    BASE_URL = "https://date.nager.at/api/v3/PublicHolidays"
+    """Local holiday data provider kept XML-friendly for the project demo."""
 
     def get_public_holidays(self, year: int, country_code: str = "TR") -> dict[str, Any]:
         country_code = country_code.upper()
-        url = f"{self.BASE_URL}/{year}/{country_code}"
-        try:
-            with urlopen(url, timeout=5) as response:
-                holidays = json.loads(response.read().decode("utf-8"))
-            source = url
-        except (OSError, URLError, TimeoutError, json.JSONDecodeError):
-            holidays = self._offline_fallback(year, country_code)
-            source = "offline fallback"
-
         return {
-            "source": source,
+            "source": "local XML-compatible holiday data",
             "year": year,
             "countryCode": country_code,
-            "holidays": [
-                {
-                    "date": item.get("date", ""),
-                    "localName": item.get("localName", ""),
-                    "name": item.get("name", ""),
-                }
-                for item in holidays
-            ],
+            "holidays": self._offline_fallback(year, country_code),
         }
 
     def _offline_fallback(self, year: int, country_code: str) -> list[dict[str, str]]:

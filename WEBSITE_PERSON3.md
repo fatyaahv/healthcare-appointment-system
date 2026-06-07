@@ -1,32 +1,9 @@
-# Website - Official Public Service Portal
+﻿# Website Notes
 
-The project now includes a polished public-facing website for the Healthcare Appointment System.
-
-## Run
-
-```bash
-python api_server.py
-```
-
-Open:
+The website opens at:
 
 ```text
 http://127.0.0.1:8000/
 ```
 
-Swagger remains available at:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-## Website sections
-
-- Public-service hero page
-- Live XML dataset summary
-- Clinic and doctor directory
-- Appointment table with status and doctor filters
-- XML/XSD/XSLT project evidence links
-- External holiday integration panel
-
-The website uses the same REST API created for Person 3, so it demonstrates web services, integration, and deployment together in one user-facing portal.
+The screen contains `Kayıt Ol` and `Giriş Yap` flows. Patient registration is available; doctor login uses backend-defined doctor codes. Appointment filters use dropdowns for city, district, hospital, department, doctor, and date.
