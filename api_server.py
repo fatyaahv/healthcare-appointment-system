@@ -28,6 +28,8 @@ NS_URI = "https://www.saglikrandevu.com/schema"
 NS = {"h": NS_URI}
 ALLOWED_STATUSES = {"Pending", "Completed", "Cancelled"}
 TC_PATTERN = re.compile(r"^\d{11}$")
+MASTER_USERNAME = "master"
+MASTER_PASSWORD = "123456"
 
 # Portal doctors and selectable location/department data are intentionally code-defined.
 # Patients cannot register doctor accounts.
@@ -90,25 +92,31 @@ def department_name(department_id: str) -> str:
     return department["departmentName"] if department else ""
 
 
-def portal_doctor(doctor_id: str) -> dict[str, str] | None:
-    doctor = next((item for item in PORTAL_DOCTORS if item["doctorId"].upper() == doctor_id.upper()), None)
-    if not doctor:
-        return None
+def decorate_portal_doctor(doctor: dict[str, str]) -> dict[str, str]:
     hospital = catalog_hospital()
     return {
         **doctor,
-        "cityId": "IST",
-        "cityName": "Istanbul",
-        "districtId": "UMR",
-        "districtName": "Umraniye",
-        "hospitalId": hospital["hospitalId"],
-        "hospitalName": hospital["hospitalName"],
+        "cityId": doctor.get("cityId", "IST"),
+        "cityName": doctor.get("cityName", "Istanbul"),
+        "districtId": doctor.get("districtId", "UMR"),
+        "districtName": doctor.get("districtName", "Umraniye"),
+        "hospitalId": doctor.get("hospitalId", hospital["hospitalId"]),
+        "hospitalName": doctor.get("hospitalName", hospital["hospitalName"]),
         "departmentName": department_name(doctor["departmentId"]),
     }
 
 
-def list_portal_doctors() -> list[dict[str, str]]:
-    return [portal_doctor(doctor["doctorId"]) for doctor in PORTAL_DOCTORS]
+def portal_doctor(doctor_id: str, doctors: list[dict[str, str]] | None = None) -> dict[str, str] | None:
+    source = doctors if doctors is not None else PORTAL_DOCTORS
+    doctor = next((item for item in source if item["doctorId"].upper() == doctor_id.upper()), None)
+    if not doctor:
+        return None
+    return decorate_portal_doctor(doctor)
+
+
+def list_portal_doctors(doctors: list[dict[str, str]] | None = None) -> list[dict[str, str]]:
+    source = doctors if doctors is not None else PORTAL_DOCTORS
+    return [decorate_portal_doctor(doctor) for doctor in source]
 
 
 def text(parent: ET.Element, query: str) -> str:
@@ -126,6 +134,13 @@ def parse_request_body(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
     if length == 0:
         return {}
     raw_body = handler.rfile.read(length).decode("utf-8")
+    content_type = handler.headers.get("Content-Type", "")
+    if "application/xml" in content_type or "text/xml" in content_type:
+        try:
+            root = ET.fromstring(raw_body)
+        except ET.ParseError as exc:
+            raise ValueError(f"Invalid XML request body: {exc}") from exc
+        return {child.tag: child.text.strip() if child.text else "" for child in root}
     return {key: values[0] for key, values in parse_qs(raw_body).items()}
 
 
@@ -306,7 +321,7 @@ class PortalStore:
         self.data_path = data_path
         self._lock = threading.Lock()
         if not self.data_path.exists():
-            self._save({"patients": [], "slots": []})
+            self._save({"patients": [], "slots": [], "doctors": []})
 
     def _load(self) -> dict[str, Any]:
         root = ET.parse(self.data_path).getroot()
@@ -318,6 +333,18 @@ class PortalStore:
                     "birthDate": node_text(patient, "birthDate"),
                     "firstName": node_text(patient, "firstName"),
                     "lastName": node_text(patient, "lastName"),
+                }
+            )
+        doctors = []
+        for doctor in root.findall("doctors/doctor"):
+            doctors.append(
+                {
+                    "doctorId": node_text(doctor, "doctorId"),
+                    "firstName": node_text(doctor, "firstName"),
+                    "lastName": node_text(doctor, "lastName"),
+                    "departmentId": node_text(doctor, "departmentId"),
+                    "hospitalId": node_text(doctor, "hospitalId") or "H01",
+                    "loginCode": node_text(doctor, "loginCode"),
                 }
             )
         slots = []
@@ -337,7 +364,7 @@ class PortalStore:
                     "patientTc": node_text(slot, "patientTc") or None,
                 }
             )
-        return {"patients": patients, "slots": slots}
+        return {"patients": patients, "slots": slots, "doctors": doctors}
 
     def _save(self, data: dict[str, Any]) -> None:
         root = ET.Element("portalData")
@@ -349,8 +376,14 @@ class PortalStore:
             add_text(patient_node, "firstName", patient.get("firstName", ""))
             add_text(patient_node, "lastName", patient.get("lastName", ""))
 
+        doctors_node = ET.SubElement(root, "doctors")
+        for doctor in data.get("doctors", []):
+            doctor_node = ET.SubElement(doctors_node, "doctor")
+            for field in ("doctorId", "firstName", "lastName", "departmentId", "hospitalId", "loginCode"):
+                add_text(doctor_node, field, doctor.get(field, ""))
+
         slots_node = ET.SubElement(root, "slots")
-        for slot in data["slots"]:
+        for slot in data.get("slots", []):
             slot_node = ET.SubElement(slots_node, "slot")
             for field in (
                 "slotId",
@@ -407,9 +440,51 @@ class PortalStore:
             raise PermissionError("Patient login failed. Check TC and birth date.")
         return patient
 
+    def authenticate_master(self, payload: dict[str, Any]) -> dict[str, str]:
+        ensure_required(payload, ["username", "password"])
+        if str(payload["username"]).strip() != MASTER_USERNAME or str(payload["password"]).strip() != MASTER_PASSWORD:
+            raise PermissionError("Master login failed. Check username and password.")
+        return {"username": MASTER_USERNAME, "role": "master"}
+
+    def list_doctors(self) -> list[dict[str, str]]:
+        with self._lock:
+            data = self._load()
+            return list_portal_doctors(self._all_doctor_records(data))
+
+    def add_doctor(self, payload: dict[str, Any]) -> dict[str, str]:
+        self.authenticate_master(payload)
+        ensure_required(payload, ["firstName", "lastName", "departmentId", "hospitalId", "loginCode"])
+        department_id = str(payload["departmentId"]).strip().upper()
+        hospital_id = str(payload["hospitalId"]).strip().upper()
+        if not department_name(department_id):
+            raise ValueError("departmentId is not in the catalog.")
+        if hospital_id != catalog_hospital()["hospitalId"]:
+            raise ValueError("hospitalId is not in the catalog.")
+
+        with self._lock:
+            data = self._load()
+            doctor_records = self._all_doctor_records(data)
+            doctor_id = str(payload.get("doctorId", "")).strip().upper() or self._next_doctor_id(doctor_records)
+            if any(doctor["doctorId"].upper() == doctor_id for doctor in doctor_records):
+                raise ValueError("doctorId already exists.")
+            doctor = {
+                "doctorId": doctor_id,
+                "firstName": str(payload["firstName"]).strip(),
+                "lastName": str(payload["lastName"]).strip(),
+                "departmentId": department_id,
+                "hospitalId": hospital_id,
+                "loginCode": str(payload["loginCode"]).strip(),
+            }
+            data["doctors"].append(doctor)
+            data["doctors"].sort(key=lambda item: item["doctorId"])
+            self._save(data)
+            return decorate_portal_doctor(doctor)
+
     def authenticate_doctor(self, doctor_id: str, code: str, repository: AppointmentRepository) -> dict[str, str]:
         doctor_id = doctor_id.upper().strip()
-        doctor = portal_doctor(doctor_id)
+        with self._lock:
+            data = self._load()
+            doctor = portal_doctor(doctor_id, self._all_doctor_records(data))
         if doctor is None or doctor.get("loginCode") != str(code).strip():
             raise PermissionError("Doctor login failed. Check doctor ID and code.")
         return doctor
@@ -498,6 +573,23 @@ class PortalStore:
             self._save(data)
             return self._decorate_slot(slot, data, repository)
 
+    def cancel_doctor_booking(self, slot_id: str, payload: dict[str, Any], repository: AppointmentRepository) -> dict[str, Any]:
+        ensure_required(payload, ["doctorId", "code"])
+        doctor = self.authenticate_doctor(str(payload["doctorId"]), str(payload["code"]), repository)
+        with self._lock:
+            data = self._load()
+            slot = self._find_slot(data, slot_id)
+            if not slot:
+                raise LookupError("Slot was not found.")
+            if slot["doctorId"] != doctor["doctorId"]:
+                raise PermissionError("This doctor cannot cancel another doctor's appointment.")
+            if not slot["isBooked"]:
+                raise ValueError("This appointment slot is already empty.")
+            slot["isBooked"] = False
+            slot["patientTc"] = None
+            self._save(data)
+            return self._decorate_slot(slot, data, repository)
+
     def list_doctor_bookings(self, query: dict[str, list[str]], repository: AppointmentRepository) -> list[dict[str, Any]]:
         doctor_id = first_query_value(query, "doctorId") or ""
         code = first_query_value(query, "code") or ""
@@ -547,11 +639,26 @@ class PortalStore:
         with self._lock:
             return len(self._load()["patients"])
 
+    def doctor_count(self) -> int:
+        with self._lock:
+            return len(self._all_doctor_records(self._load()))
+
     def _find_patient(self, data: dict[str, Any], tc: str) -> dict[str, str] | None:
         return next((patient for patient in data["patients"] if patient["tc"] == tc), None)
 
     def _find_slot(self, data: dict[str, Any], slot_id: str) -> dict[str, Any] | None:
         return next((slot for slot in data["slots"] if slot["slotId"] == slot_id), None)
+
+    def _all_doctor_records(self, data: dict[str, Any]) -> list[dict[str, str]]:
+        return [*PORTAL_DOCTORS, *data.get("doctors", [])]
+
+    def _next_doctor_id(self, doctors: list[dict[str, str]]) -> str:
+        numbers = []
+        for doctor in doctors:
+            doctor_id = doctor.get("doctorId", "")
+            if doctor_id.startswith("D") and doctor_id[1:].isdigit():
+                numbers.append(int(doctor_id[1:]))
+        return f"D{max(numbers, default=0) + 1:02d}"
 
     def _public_patient(self, patient: dict[str, str] | None) -> dict[str, str]:
         if not patient:
@@ -565,7 +672,7 @@ class PortalStore:
         }
 
     def _decorate_slot(self, slot: dict[str, Any], data: dict[str, Any], repository: AppointmentRepository) -> dict[str, Any]:
-        doctor = portal_doctor(slot["doctorId"]) or {
+        doctor = portal_doctor(slot["doctorId"], self._all_doctor_records(data)) or {
             "firstName": "",
             "lastName": "",
             "departmentName": "",
@@ -603,6 +710,8 @@ class AppointmentApi:
     def handle(self, method: str, path: str, query: dict[str, list[str]]) -> tuple[int, dict[str, Any]]:
         if method == "GET":
             return self.handle_get(path, query)
+        if method == "DELETE":
+            return self.handle_delete(path, {}, query)
         return HTTPStatus.METHOD_NOT_ALLOWED, {"error": "Only GET endpoints are supported by this compatibility method."}
 
     def handle_get(self, path: str, query: dict[str, list[str]]) -> tuple[int, dict[str, Any]]:
@@ -633,7 +742,7 @@ class AppointmentApi:
         if path == "/api/reports/summary":
             summary = self.repository.appointment_summary()
             summary["totalAppointments"] = int(summary["totalAppointments"]) + self.portal_store.booked_count()
-            summary["totalDoctors"] = len(list_portal_doctors())
+            summary["totalDoctors"] = self.portal_store.doctor_count()
             summary["totalPatients"] = self.portal_store.patient_count()
             return HTTPStatus.OK, summary
         if path == "/api/integration/holidays":
@@ -647,7 +756,7 @@ class AppointmentApi:
         if path == "/api/portal/catalog":
             return HTTPStatus.OK, LOCATION_CATALOG
         if path == "/api/portal/doctors":
-            doctors = list_portal_doctors()
+            doctors = self.portal_store.list_doctors()
             department_id = first_query_value(query, "departmentId")
             hospital_id = first_query_value(query, "hospitalId")
             if department_id:
@@ -686,12 +795,34 @@ class AppointmentApi:
             ensure_required(payload, ["doctorId", "code"])
             doctor = self.portal_store.authenticate_doctor(str(payload["doctorId"]), str(payload["code"]), self.repository)
             return HTTPStatus.OK, {"doctor": doctor}
+        if path == "/api/auth/master/login":
+            master = self.portal_store.authenticate_master(payload)
+            return HTTPStatus.OK, {"master": master}
+        if path == "/api/master/doctors":
+            doctor = self.portal_store.add_doctor(payload)
+            return HTTPStatus.CREATED, {"doctor": doctor}
         if path == "/api/doctor/slots":
             slots = self.portal_store.create_slots(payload, self.repository)
             return HTTPStatus.CREATED, {"slots": slots}
         if path == "/api/patient/appointments":
             slot = self.portal_store.book_slot(payload, self.repository)
             return HTTPStatus.CREATED, {"appointment": slot}
+        return HTTPStatus.NOT_FOUND, {"error": f"No route found for {path}"}
+
+    def handle_delete(
+        self,
+        path: str,
+        payload: dict[str, Any],
+        query: dict[str, list[str]] | None = None,
+    ) -> tuple[int, dict[str, Any]]:
+        if path.startswith("/api/doctor/bookings/"):
+            slot_id = path.rsplit("/", 1)[-1]
+            merged_payload = dict(payload)
+            for key, values in (query or {}).items():
+                if values:
+                    merged_payload[key] = values[0]
+            slot = self.portal_store.cancel_doctor_booking(slot_id, merged_payload, self.repository)
+            return HTTPStatus.OK, {"appointment": slot}
         return HTTPStatus.NOT_FOUND, {"error": f"No route found for {path}"}
 
 
@@ -701,7 +832,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self.send_response(HTTPStatus.NO_CONTENT)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
@@ -726,6 +857,10 @@ class RequestHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         self._send_api_response(lambda: self.api.handle_post(parsed.path, parse_request_body(self)))
 
+    def do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        self._send_api_response(lambda: self.api.handle_delete(parsed.path, parse_request_body(self), parse_qs(parsed.query)))
+
     def _send_api_response(self, handler) -> None:
         try:
             status, payload = handler()
@@ -735,6 +870,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             status, payload = HTTPStatus.UNAUTHORIZED, {"error": str(exc)}
         except LookupError as exc:
             status, payload = HTTPStatus.NOT_FOUND, {"error": str(exc)}
+        except Exception as exc:
+            status, payload = HTTPStatus.INTERNAL_SERVER_ERROR, {"error": f"Internal server error: {exc}"}
         self.send_xml(status, payload)
 
     def send_xml(self, status: int, payload: dict[str, Any]) -> None:
@@ -791,9 +928,12 @@ def build_openapi_document() -> dict[str, Any]:
                 {"url": "/api/auth/patient/register", "method": "POST", "summary": "Register patient"},
                 {"url": "/api/auth/patient/login", "method": "POST", "summary": "Login patient"},
                 {"url": "/api/auth/doctor/login", "method": "POST", "summary": "Login doctor"},
+                {"url": "/api/auth/master/login", "method": "POST", "summary": "Login master user"},
+                {"url": "/api/master/doctors", "method": "POST", "summary": "Create a doctor with XML-compatible data"},
                 {"url": "/api/doctor/slots", "method": "POST", "summary": "Create 15-minute doctor slots"},
                 {"url": "/api/patient/appointments", "method": "POST", "summary": "Book an available appointment slot"},
                 {"url": "/api/doctor/bookings", "method": "GET", "summary": "List booked patients for a doctor"},
+                {"url": "/api/doctor/bookings/{slotId}", "method": "DELETE", "summary": "Cancel a booked appointment"},
                 {"url": "/api/patient/bookings", "method": "GET", "summary": "List patient bookings"},
             ]
         },
@@ -837,9 +977,12 @@ def swagger_ui_html() -> str:
           <tr><td class="method">POST</td><td><code>/api/auth/patient/register</code></td><td>Register patient</td></tr>
           <tr><td class="method">POST</td><td><code>/api/auth/patient/login</code></td><td>Login patient</td></tr>
           <tr><td class="method">POST</td><td><code>/api/auth/doctor/login</code></td><td>Login doctor</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/auth/master/login</code></td><td>Login master user</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/master/doctors</code></td><td>Master creates a doctor</td></tr>
           <tr><td class="method">POST</td><td><code>/api/doctor/slots</code></td><td>Create 15-minute doctor slots</td></tr>
           <tr><td class="method">POST</td><td><code>/api/patient/appointments</code></td><td>Book slot</td></tr>
           <tr><td class="method">GET</td><td><code>/api/doctor/bookings</code></td><td>Doctor sees booked patient name, surname, and TC</td></tr>
+          <tr><td class="method">DELETE</td><td><code>/api/doctor/bookings/{slotId}</code></td><td>Doctor cancels a booked appointment</td></tr>
         </tbody>
       </table>
     </div>

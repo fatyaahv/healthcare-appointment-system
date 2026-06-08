@@ -11,6 +11,8 @@ const holidayList = document.querySelector("#holidayList");
 const patientRegisterForm = document.querySelector("#patientRegisterForm");
 const patientLoginForm = document.querySelector("#patientLoginForm");
 const doctorLoginForm = document.querySelector("#doctorLoginForm");
+const masterLoginForm = document.querySelector("#masterLoginForm");
+const doctorCreateForm = document.querySelector("#doctorCreateForm");
 const slotCreateForm = document.querySelector("#slotCreateForm");
 const portalMessage = document.querySelector("#portalMessage");
 const patientState = document.querySelector("#patientState");
@@ -29,15 +31,21 @@ const doctorLoginSelect = document.querySelector("#doctorLoginSelect");
 const loginRole = document.querySelector("#loginRole");
 const patientLoginBlock = document.querySelector("#patientLoginBlock");
 const doctorLoginBlock = document.querySelector("#doctorLoginBlock");
+const masterLoginBlock = document.querySelector("#masterLoginBlock");
+const masterDepartment = document.querySelector("#masterDepartment");
+const masterHospital = document.querySelector("#masterHospital");
+const masterDoctorList = document.querySelector("#masterDoctorList");
 const views = {
   home: document.querySelector("#homeView"),
   register: document.querySelector("#registerView"),
   login: document.querySelector("#loginView"),
   patient: document.querySelector("#patientView"),
   doctor: document.querySelector("#doctorView"),
+  master: document.querySelector("#masterView"),
 };
 const patientPanelState = document.querySelector("#patientPanelState");
 const doctorPanelState = document.querySelector("#doctorPanelState");
+const masterPanelState = document.querySelector("#masterPanelState");
 
 const DEFAULT_CATALOG = {
   cities: [
@@ -104,6 +112,8 @@ const state = {
   patientCredentials: null,
   doctor: null,
   doctorCode: "",
+  master: null,
+  masterCredentials: null,
   catalog: DEFAULT_CATALOG,
   doctors: DEFAULT_DOCTORS,
   publicBookings: [],
@@ -245,6 +255,20 @@ async function postForm(url, payload) {
   return xml;
 }
 
+async function deleteForm(url, payload) {
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(payload).toString(),
+  });
+  const body = await response.text();
+  const xml = new DOMParser().parseFromString(body, "application/xml");
+  if (!response.ok) {
+    throw new Error(text(xml, "error") || `Request failed: ${url}`);
+  }
+  return xml;
+}
+
 function showMessage(message, tone = "info") {
   portalMessage.textContent = message;
   portalMessage.dataset.tone = tone;
@@ -268,6 +292,7 @@ function toggleAuthView() {
   const role = loginRole.value;
   patientLoginBlock.hidden = role !== "patient";
   doctorLoginBlock.hidden = role !== "doctor";
+  masterLoginBlock.hidden = role !== "master";
 }
 
 function renderSummary(xml) {
@@ -364,6 +389,7 @@ function renderCatalogOptions() {
   bookingCity.innerHTML = options(state.catalog.cities, "cityId", "cityName");
   renderDistrictOptions();
   bookingDepartment.innerHTML = options(state.catalog.departments, "departmentId", "departmentName");
+  renderMasterCatalogOptions();
 }
 
 function renderDistrictOptions() {
@@ -375,6 +401,33 @@ function renderDistrictOptions() {
 function renderHospitalOptions() {
   const district = selectedDistrict() || selectedCity()?.districts[0];
   bookingHospital.innerHTML = options(district?.hospitals || [], "hospitalId", "hospitalName");
+}
+
+function renderMasterCatalogOptions() {
+  if (!state.catalog || !masterDepartment || !masterHospital) return;
+  const hospitals = state.catalog.cities.flatMap((city) =>
+    city.districts.flatMap((district) => district.hospitals)
+  );
+  masterDepartment.innerHTML = options(state.catalog.departments, "departmentId", "departmentName");
+  masterHospital.innerHTML = options(hospitals, "hospitalId", "hospitalName");
+}
+
+function renderMasterDoctorList() {
+  if (!masterDoctorList) return;
+  masterDoctorList.innerHTML = `
+    <h4>Kaydedilen Doktorlar</h4>
+    <ul>
+      ${state.doctors
+        .map((doctor) => `
+          <li>
+            <strong>${doctor.doctorId} - Dr. ${doctor.firstName} ${doctor.lastName}</strong>
+            <span>${doctor.departmentName} - ${doctor.hospitalName}</span>
+            <em>Giris kodu: ${doctor.loginCode}</em>
+          </li>
+        `)
+        .join("")}
+    </ul>
+  `;
 }
 
 function filteredBookingDoctors() {
@@ -401,6 +454,15 @@ function renderDoctorLoginOptions(doctors) {
   doctorLoginSelect.innerHTML = doctors
     .map((doctor) => `<option value="${doctor.doctorId}">${doctor.doctorId} - Dr. ${doctor.firstName} ${doctor.lastName} (${doctor.departmentName})</option>`)
     .join("");
+}
+
+async function loadPortalDoctors() {
+  const xml = await getXml("/api/portal/doctors");
+  state.doctors = [...xml.querySelectorAll("doctors > doctor")].map(doctorFromNode);
+  refreshBookingDoctorOptions();
+  renderDoctorLoginOptions(state.doctors);
+  renderClinics();
+  renderMasterDoctorList();
 }
 
 function refreshBookingDoctorOptions() {
@@ -470,10 +532,12 @@ function updateSessionLabels() {
   const doctorText = state.doctor
     ? `Dr. ${state.doctor.firstName} ${state.doctor.lastName} (${state.doctor.doctorId})`
     : "Doktor girişi yok";
+  const masterText = state.master ? "Master girisi aktif" : "Master girisi yok";
   patientState.textContent = patientText;
   patientPanelState.textContent = patientText;
   doctorState.textContent = doctorText;
   doctorPanelState.textContent = doctorText;
+  masterPanelState.textContent = masterText;
 }
 
 function slotLabel(slot) {
@@ -529,6 +593,7 @@ function renderBookingList(target, title, slots, includePatient) {
               <span>${slot.doctorName}</span>
               <span>${slot.departmentName} - ${slot.hospitalName}</span>
               ${includePatient ? `<em>${patientText}</em>` : ""}
+              ${includePatient ? `<button class="button secondary cancel-booking" data-cancel-slot-id="${slot.slotId}" type="button">Randevuyu Iptal Et</button>` : ""}
             </li>
           `;
         })
@@ -621,6 +686,44 @@ doctorLoginForm.addEventListener("submit", async (event) => {
   }
 });
 
+masterLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const payload = formPayload(masterLoginForm);
+    const xml = await postForm("/api/auth/master/login", payload);
+    state.master = { username: text(xml, "username") || payload.username };
+    state.masterCredentials = payload;
+    updateSessionLabels();
+    renderMasterDoctorList();
+    showView("master");
+    showMessage("Master girisi basarili.", "success");
+  } catch (error) {
+    showMessage(error.message, "error");
+  }
+});
+
+doctorCreateForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!state.masterCredentials) {
+    showMessage("Doktor kaydetmek icin master girisi yapin.", "error");
+    return;
+  }
+  try {
+    const payload = {
+      ...state.masterCredentials,
+      ...formPayload(doctorCreateForm),
+    };
+    const xml = await postForm("/api/master/doctors", payload);
+    const doctor = doctorFromNode(xml.querySelector("doctor"));
+    await Promise.all([loadPortalDoctors(), loadSummary()]);
+    doctorCreateForm.reset();
+    renderMasterCatalogOptions();
+    showMessage(`${doctor.doctorId} - Dr. ${doctor.firstName} ${doctor.lastName} kaydedildi.`, "success");
+  } catch (error) {
+    showMessage(error.message, "error");
+  }
+});
+
 slotCreateForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.doctor || !state.doctorCode) {
@@ -639,6 +742,25 @@ slotCreateForm.addEventListener("submit", async (event) => {
     bookingDate.value = payload.date;
     await loadSlots();
     showMessage(`${slots.length} adet 15 dakikalık randevu oluşturuldu.`, "success");
+  } catch (error) {
+    showMessage(error.message, "error");
+  }
+});
+
+doctorBookings.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-cancel-slot-id]");
+  if (!button) return;
+  if (!state.doctor || !state.doctorCode) {
+    showMessage("Randevu iptal etmek icin doktor girisi yapin.", "error");
+    return;
+  }
+  try {
+    await deleteForm(`/api/doctor/bookings/${button.dataset.cancelSlotId}`, {
+      doctorId: state.doctor.doctorId,
+      code: state.doctorCode,
+    });
+    await Promise.all([loadDoctorBookings(), loadSlots(), loadPublicBookings(), loadSummary()]);
+    showMessage("Randevu iptal edildi.", "success");
   } catch (error) {
     showMessage(error.message, "error");
   }
@@ -712,6 +834,12 @@ document.querySelectorAll("[data-view-target]").forEach((button) => {
       toggleAuthView();
       return;
     }
+    if (target === "master" && !state.master) {
+      showView("login");
+      loginRole.value = "master";
+      toggleAuthView();
+      return;
+    }
     showView(target);
   });
 });
@@ -732,6 +860,7 @@ async function initializePortal() {
   refreshBookingDoctorOptions();
   renderDoctorLoginOptions(state.doctors);
   renderClinics();
+  renderMasterDoctorList();
   updateSessionLabels();
 
   try {
@@ -749,6 +878,7 @@ async function initializePortal() {
     refreshBookingDoctorOptions();
     renderDoctorLoginOptions(state.doctors);
     renderClinics();
+    renderMasterDoctorList();
     renderHolidays(holidays);
     updateSessionLabels();
     await Promise.all([loadAppointments(), loadSlots(), loadPublicBookings()]);

@@ -190,6 +190,7 @@
               <select id="loginRole">
                 <option value="patient">Hasta</option>
                 <option value="doctor">Doktor</option>
+                <option value="master">Master</option>
               </select>
             </label>
           </div>
@@ -221,6 +222,21 @@
                 <input name="code" type="password" placeholder="1001" required>
               </label>
               <button class="button primary" type="submit">Doktor Girişi</button>
+            </form>
+          </div>
+
+          <div id="masterLoginBlock" hidden>
+            <h3>Master Girisi</h3>
+            <form id="masterLoginForm" class="form-grid compact-form">
+              <label>
+                Kullanici Adi
+                <input name="username" autocomplete="username" required>
+              </label>
+              <label>
+                Sifre
+                <input name="password" type="password" autocomplete="current-password" required>
+              </label>
+              <button class="button primary" type="submit">Master Girisi</button>
             </form>
           </div>
         </section>
@@ -292,6 +308,42 @@
             <button class="button primary" type="submit">15 Dakikalık Randevuları Oluştur</button>
           </form>
           <div id="doctorBookings" class="booking-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view auth-page" id="masterView" hidden>
+      <div class="container page-shell">
+        <button class="button secondary back-button" type="button" data-view-target="home">Ana sayfaya don</button>
+        <section class="portal-panel single-panel">
+          <div class="panel-header">
+            <h2>Master Doktor Yonetimi</h2>
+            <span id="masterPanelState">Master girisi yok</span>
+          </div>
+          <form id="doctorCreateForm" class="form-grid">
+            <label>
+              Isim
+              <input name="firstName" placeholder="Yeni" required>
+            </label>
+            <label>
+              Soyisim
+              <input name="lastName" placeholder="Doktor" required>
+            </label>
+            <label>
+              Doktor Kodu
+              <input name="loginCode" placeholder="2026" required>
+            </label>
+            <label>
+              Bolum
+              <select name="departmentId" id="masterDepartment"></select>
+            </label>
+            <label>
+              Hastane
+              <select name="hospitalId" id="masterHospital"></select>
+            </label>
+            <button class="button primary" type="submit">Doktor Kaydet</button>
+          </form>
+          <div id="masterDoctorList" class="booking-list" aria-live="polite"></div>
         </section>
       </div>
     </section>

@@ -9,7 +9,7 @@ XML Course Final Project
 
 ## XML-Based Appointment Portal
 
-This project uses XML as the main data format. The portal stores patient registrations and live appointment slots in `portal_data.xml`.
+This project uses XML as the main data format. The portal stores patient registrations, master-created doctors, and live appointment slots in `portal_data.xml`.
 
 ### Run
 
@@ -51,15 +51,47 @@ These documentation links are not shown in the frontend navigation.
 - Registration is only for patients.
 - Patient registration asks for TC, birth date, first name, and last name.
 - TC must be exactly 11 digits.
-- Login has role selection: patient or doctor.
+- Login has role selection: patient, doctor, or master.
 - Patient login asks for TC and birth date.
 - Doctor login asks for doctor ID and code.
+- Master login uses username `master` and password `123456`.
+- Master users can create new doctors by selecting hospital and department.
 - Doctors create appointment slots after login.
 - Doctor-created slots are generated every 15 minutes.
+- Doctors can cancel booked appointments from the doctor panel.
 - Patients filter appointments by city, district, hospital, department, doctor, and date.
 - Available slots are green.
 - Booked slots are red.
 - Doctors can see booked patients' first name, last name, and TC.
+
+### REST API Evidence
+
+The API returns XML with `Content-Type: application/xml`.
+
+Core endpoints:
+
+- `GET /api/appointments`: list XML dataset appointments
+- `GET /api/appointments/{id}`: get one appointment
+- `POST /api/master/doctors`: master creates a doctor
+- `DELETE /api/doctor/bookings/{slotId}`: doctor cancels a booked appointment
+- `GET /api/integration/holidays`: consumes an external XML service adapter and returns XML-compatible data
+
+Example XML request:
+
+```xml
+<request>
+  <username>master</username>
+  <password>123456</password>
+</request>
+```
+
+Send it to:
+
+```text
+POST http://127.0.0.1:8000/api/auth/master/login
+Content-Type: application/xml
+Accept: application/xml
+```
 
 ### Current Location Data
 
